@@ -8,18 +8,16 @@ const client = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID,
   clientSecret: process.env.TWITTER_CLIENT_SECRET,
 });
-//Random url matches with your twitter app
-const CALLBACK_URL = "https://irancrypto.market/twitterbot/";
 
 async function main() {
   const { url, codeVerifier, state } = client.generateOAuth2AuthLink(
-    CALLBACK_URL,
+    process.env.CALLBACK_URL,
     { scope: ["tweet.read", "tweet.write", "users.read", "offline.access"] }
   );
   console.log("\r\nSave Code verifierer below ->");
   console.log(`\r\n${codeVerifier}\r\n`);
   console.log(`Go to this link to auth your account ->\r\n`);
-  console.log("url", url);
+  console.log(url);
   console.log(`\r\nAfter all answer the prompts!`);
 
   prompt.start();
@@ -38,7 +36,7 @@ async function login($redirectedURL, $codeVerifier) {
       } = await client.loginWithOAuth2({
         code: urlParams.get("code"),
         codeVerifier: $codeVerifier,
-        redirectUri: CALLBACK_URL,
+        redirectUri: process.env.CALLBACK_URL,
       });
       const $me=await loggedClient.v2.me();
       console.log(`Alright everything is done!\r\n`);
