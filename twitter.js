@@ -27,7 +27,7 @@ async function init() {
     client=req.client;
     await updateTwitter({
       accessToken: req.accessToken,
-      refreshToken: refreshToken,
+      refreshToken: req.refreshToken,
       expiresIn: expiresIn
     });
   }
