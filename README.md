@@ -21,12 +21,12 @@ Twitter access token it's not a straight forward way, So you need:
 2. Setup a new application
 3. Setup an user authentication setup for your project (Callback URL could be anything, we just need to copy it after redirection)
 
-Then it's time to set your enviornment variables:
+4. Then it's time to set your enviornment variables:
 ```sh
 OPENAI_MODEL=gpt-3.5-turbo
 OPENAI_API_KEY=<Your API Key>
 OPENAI_ORGANIZATION=<Your Organization API Key>
-DYNAMODB_TABLE=irancrypto-twitter-bot
+DYNAMODB_TABLE=<Your Dynamo DB table name>
 IRANCRYPTO_API_KEY=<Your API Key on IranCrypto>
 
 TWITTER_ACESS_TOKEN=<Your twitter access token that you wont have it first>
@@ -38,7 +38,7 @@ TWITTER_CLIENT_SECRET=<Your Twitter application client Secret>
 CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with your Twitter app config
 ```
 
-In order to authenticate and configure Twitter credentials, use the helper cli tool:
+5. In order to authenticate and configure Twitter credentials, use the helper cli tool:
 ```sh
 $ npm helper
 > Save Code verifierer below ->
@@ -52,16 +52,19 @@ Go to this link to auth your account ->
 After all answer the prompts!
 ```
 
-After that you will see the access & refresh tokens in the console which should be copied in your enviornment variables.
+6. After that you will see the access & refresh tokens in the console which should be copied in your enviornment variables.
 
 The rest will be managed by Dynamo DB to store your tokens each time it's get refreshed.
 
-Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob/712ca82293c1b587638055537969dbec5a7bce40/doc/auth.md#user-wide-authentication-flow) of the used twitter auth flow.
+Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob/712ca82293c1b587638055537969dbec5a7bce40/doc/auth.md#user-wide-authentication-flow)  on the Twitter authentication flow used.
 
 ## Installation
 1. Clone Repo
 2. Run `npm install`
-3. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
+3. Create .env file and fill out the values as explained
+4. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
+
+Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
 
 ## Contributing
 Pull requests are welcome! Feel free to open issues for any improvements or bugs.
