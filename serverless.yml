@@ -1,0 +1,24 @@
+service: irancrypto-twitter-bot
+
+frameworkVersion: "3"
+
+package:
+  patterns:
+    - '!./.env'
+    - '!./.env.sample'
+    - '!./json/'
+    - '!./schemas/'
+    - '!./coverage/'
+    - '!./test/'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  stage: prod
+  region: eu-west-1
+
+functions:
+  tweet:
+    handler: index.handler
+    events:
+      - schedule: cron(0 20,21 * * *)
