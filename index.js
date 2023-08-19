@@ -1,4 +1,4 @@
-const { getPopular } = require("./twitter");
+const { getPopular } = require("./api");
 const { tweet } = require("./twitter");
 const { writeTweet } = require("./ai");
 const dynamodb = require("./dynamodb");
@@ -6,7 +6,7 @@ const numeral = require("numeral");
 
 exports.handler = async function (event) {
   //Get Data from API
-  const popularItems = await getPopular();
+  const popularItems = getPopular();
   //Calculate total Vol
   let totalVolIRR = 0;
   popularItems.forEach((item) => {
