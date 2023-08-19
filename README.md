@@ -40,7 +40,7 @@ CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with your Twitte
 
 5. In order to authenticate and configure Twitter credentials, use the helper cli tool:
 ```sh
-$ npm helper
+$ npm run helper
 > Save Code verifierer below ->
 
 <....>

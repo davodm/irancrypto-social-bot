@@ -23,11 +23,11 @@ exports.handler = async function (event) {
 
   //Last run check
   const lastRun = await dynamodb.getLastRunTime();
-  if (Date().now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
+  if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
     throw new Error("Last run is less than one hour!");
   }
   //Remove runned one
-  delete tweets[lastRun.subject];
+  delete tweets[lastRun.actionSubject];
 
   let post;
   let lastKey;
