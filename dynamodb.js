@@ -20,7 +20,7 @@ const docClient = DynamoDBDocumentClient.from(client);
  */
 async function getLastRunTime() {
   const command = new GetCommand({
-    TableName: process.env.DYNAMODB_TABLE + "-runs",
+    TableName: process.env.DYNAMODB_TABLE,
     Key: {
       name: "last-run", // Timestamp name
     },
