@@ -6,7 +6,7 @@ const numeral = require("numeral");
 
 exports.handler = async function (event) {
   //Get Data from API
-  const popularItems = getPopular();
+  const popularItems = await getPopular();
   //Calculate total Vol
   let totalVolIRR = 0;
   popularItems.forEach((item) => {
