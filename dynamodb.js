@@ -1,69 +1,85 @@
 /**
- * This helper is created to use dynamo db with lambda function
+ * This helper is created to use dynamo db with lambda function 
  * With aim of checking duplicity:
  * Getting last run time and check what type of tweet was it
  */
- const AWS = require("aws-sdk");
-const dynamodb = new AWS.DynamoDB.DocumentClient({
-  region: process.env.AWS_REGION,
-});
+
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const {
+  DynamoDBDocumentClient,
+  GetCommand,
+  PutCommand,
+} = require("@aws-sdk/lib-dynamodb");
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const docClient = DynamoDBDocumentClient.from(client);
 
 /**
  * Fetch latest run timestamp from DynamoDB
  * @returns {object}
  */
 async function getLastRunTime() {
-  const result = await dynamodb.get({
-    TableName: process.env.DYNAMODB_TABLE+'-runs', 
-    Key: { 
-      name: 'last-run' // Timestamp name 
-    }
-  }).promise();
+  const command = new GetCommand({
+    TableName: process.env.DYNAMODB_TABLE + "-runs",
+    Key: {
+      name: "last-run", // Timestamp name
+    },
+  });
+
+  //Send Requests
+  const result = await docClient.send(command);
 
   return result.Item ?? false;
-
 }
 
 /**
  * Update last run time with current timestamp
- * @param {*} time 
+ * @param {*} time
  */
 async function updateLastRunTime($subject) {
-  await dynamodb.put({
+  const command = new PutCommand({
     TableName: process.env.DYNAMODB_TABLE,
     Item: {
-      name: 'last-run',
+      name: "last-run",
       timestamp: Date().now(),
-      subject:$subject 
-    }
-  }).promise();
+      subject: $subject,
+    },
+  });
+
+  //Send Request
+  return await docClient.send(command);
 }
 
-async function getTwitter(){
-  const result = await dynamodb.get({
-    TableName: process.env.DYNAMODB_TABLE, 
-    Key: { 
-      name: 'twitter'
-    }
-  }).promise();
+async function getTwitter() {
+  const command = new GetCommand({
+    TableName: process.env.DYNAMODB_TABLE,
+    Key: {
+      name: "twitter",
+    },
+  });
+  //Send Requests
+  const result = await docClient.send(command);
 
   return result.Item ?? false;
 }
 
-async function updateTwitter($data){
-  await dynamodb.put({
+async function updateTwitter($data) {
+  const command = new PutCommand({
     TableName: process.env.DYNAMODB_TABLE,
     Item: {
       ...$data,
-      name: 'twitter',
+      name: "twitter",
       timestamp: Date().now(),
-    }
-  }).promise();
+    },
+  });
+
+  //Send Request
+  return await docClient.send(command);
 }
 
-module.exports={
+module.exports = {
   getLastRunTime,
   updateLastRunTime,
   getTwitter,
-  updateTwitter
-}
+  updateTwitter,
+};
