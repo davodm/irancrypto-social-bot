@@ -15,6 +15,7 @@ async function request($method) {
   });
   //Wrongful response
   if (!response || response.status!==200) {
+    console.error('Unable to access IranCrypto API',await response.text());
     throw new Error("API Error");
   }
   return response.json();
