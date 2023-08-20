@@ -2,7 +2,10 @@ service: irancrypto-twitter-bot
 
 frameworkVersion: "3"
 
+useDotenv: true
+
 package:
+  excludeDevDependencies: true
   patterns:
     - '!./.env'
     - '!./.env.sample'
@@ -10,15 +13,48 @@ package:
     - '!./schemas/'
     - '!./coverage/'
     - '!./test/'
+    - '!./test.js'
+    - '!./twitterlogin.js'
+    - '!./README.md'
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: prod
   region: eu-west-1
+  timeout: 60
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+          Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${env:DYNAMODB_TABLE}"
 
 functions:
   tweet:
     handler: index.handler
     events:
-      - schedule: cron(0 20,21 * * *)
+      - schedule: cron(0 20,21 * * ? *)
+
+resources:
+  Resources:
+    ProjectTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${env:DYNAMODB_TABLE}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+plugins:
+  - serverless-dotenv-plugin

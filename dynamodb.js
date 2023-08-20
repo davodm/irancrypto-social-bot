@@ -3,67 +3,90 @@
  * With aim of checking duplicity:
  * Getting last run time and check what type of tweet was it
  */
- const AWS = require("aws-sdk");
-const dynamodb = new AWS.DynamoDB.DocumentClient({
-  region: process.env.AWS_REGION,
-});
+
+const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
+const { DynamoDBDocument } = require("@aws-sdk/lib-dynamodb");
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const docClient = DynamoDBDocument.from(client);
 
 /**
  * Fetch latest run timestamp from DynamoDB
  * @returns {object}
  */
 async function getLastRunTime() {
-  const result = await dynamodb.get({
-    TableName: process.env.DYNAMODB_TABLE+'-runs', 
-    Key: { 
-      name: 'last-run' // Timestamp name 
-    }
-  }).promise();
-
-  return result.Item ?? false;
-
+  //Send Request
+  try {
+    const result = await docClient.get({
+      TableName: process.env.DYNAMODB_TABLE,
+      Key: {
+        id: "last-run",
+      },
+    });
+    return result.Item ?? false;
+  } catch (error) {
+    console.error("Error fetching data from DynamoDB:", error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
 }
 
 /**
  * Update last run time with current timestamp
- * @param {*} time 
+ * @param {*} time
  */
 async function updateLastRunTime($subject) {
-  await dynamodb.put({
-    TableName: process.env.DYNAMODB_TABLE,
-    Item: {
-      name: 'last-run',
-      timestamp: Date().now(),
-      subject:$subject 
-    }
-  }).promise();
+  //Send Request
+  try {
+    return await docClient.put({
+      TableName: process.env.DYNAMODB_TABLE,
+      Item: {
+        id: "last-run",
+        timestamp: Date.now(),
+        actionSubject: $subject,
+      },
+    });
+  } catch (error) {
+    console.error("Error putting data to DynamoDB:", error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
 }
 
-async function getTwitter(){
-  const result = await dynamodb.get({
-    TableName: process.env.DYNAMODB_TABLE, 
-    Key: { 
-      name: 'twitter'
-    }
-  }).promise();
-
-  return result.Item ?? false;
+async function getTwitter() {
+  //Send Requests
+  try {
+    const result = await docClient.get({
+      TableName: process.env.DYNAMODB_TABLE,
+      Key: {
+        id: "twitter",
+      },
+    });
+    return result.Item ?? false;
+  } catch (error) {
+    console.error("Error fetching data from DynamoDB:", error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
 }
 
-async function updateTwitter($data){
-  await dynamodb.put({
-    TableName: process.env.DYNAMODB_TABLE,
-    Item: {
-      ...$data,
-      name: 'twitter',
-      timestamp: Date().now(),
-    }
-  }).promise();
+async function updateTwitter($data) {
+  //Send Request
+  try {
+    return await docClient.put({
+      TableName: process.env.DYNAMODB_TABLE,
+      Item: {
+        ...$data,
+        id: "twitter",
+        timestamp: Date.now(),
+      },
+    });
+  } catch (error) {
+    console.error("Error putting data to DynamoDB:", error);
+    throw error; // Rethrow the error to be handled by the caller
+  }
 }
 
-module.exports={
+module.exports = {
   getLastRunTime,
   updateLastRunTime,
   getTwitter,
-  updateTwitter
-}
+  updateTwitter,
+};

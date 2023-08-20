@@ -5,31 +5,57 @@
 const { TwitterApi } = require("twitter-api-v2");
 const { readFileSync } = require("fs");
 const fetch = require("node-fetch");
-const {getTwitter,updateTwitter} = require('./dynamodb');
+const { getTwitter, updateTwitter } = require("./dynamodb");
 let client;
 
 async function init() {
+  let $act='refresh';
   //Get From Dynamo
-  $data=await getTwitter();
-  //If it's updated less than an hour
-  if($data?.timestamp && (Date.now() - $data.timestamp) < 3600000){
-    client=new TwitterApi($data.accessToken);
-    return;
+  $data = await getTwitter();
+  //First time init from env
+  if ($data === false) {
+    $act='first';
+    await updateTwitter({
+      accessToken: process.env.TWITTER_ACCESS_TOKEN,
+      refreshToken: process.env.TWITTER_REFRESH_TOKEN,
+      expiresIn: 6000,
+    });
+    return new TwitterApi(process.env.TWITTER_ACCESS_TOKEN);
   }
-  //Refresh it first
-  client = new TwitterApi({
+
+  //If it's updated less than it's expiration
+  if (
+    $data?.timestamp &&
+    Date.now() - $data.timestamp < $data.expiresIn * 1000
+  ) {
+    $act='not expired';
+    return new TwitterApi($data.accessToken);
+  }
+  //Refresh it while it's expired
+  const tmpClient = new TwitterApi({
     clientId: process.env.TWITTER_CLIENT_ID,
     clientSecret: process.env.TWITTER_CLIENT_SECRET,
   });
-
-  const req=await client.refreshOAuth2Token($data.refreshToken ?? process.env.TWITTER_REFRESH_TOKEN);
-  if(req?.refreshToken){
-    client=req.client;
-    await updateTwitter({
-      accessToken: req.accessToken,
-      refreshToken: refreshToken,
-      expiresIn: expiresIn
-    });
+  try {
+    //Request to refresh token
+    const req = await tmpClient.refreshOAuth2Token(
+      $data.refreshToken ?? process.env.TWITTER_REFRESH_TOKEN
+    );
+    if (req?.refreshToken) {
+      await updateTwitter({
+        accessToken: req.accessToken,
+        refreshToken: req.refreshToken,
+        expiresIn: req.expiresIn,
+      });
+      console.log('test user name:',await req.client.v2.me()?.data?.name);
+      return req.client;
+    }else{
+      throw new Error('Couldnt refresh token');
+    }
+  } catch (error) {
+    console.log('Action of twitter access token:',$act);
+    console.error("Error in refreshing token", error.message,err?.errors[0]?.message ?? null);
+    throw error;
   }
 }
 /**
@@ -40,8 +66,8 @@ async function init() {
  */
 async function tweet($text, $mediaFiles = []) {
   //Init client to use access token or refresh it
-  if(!client){
-    await init();
+  if (!client) {
+    client=await init();
   }
   const $mediaIDs = await prepareMediaFiles($mediaFiles);
   //Build options
@@ -57,8 +83,8 @@ async function tweet($text, $mediaFiles = []) {
 
 async function reply($tweetID, $text, $mediaFiles = []) {
   //Init client to use access token or refresh it
-  if(!client){
-    await init();
+  if (!client) {
+    client=await init();
   }
   const $mediaIDs = await prepareMediaFiles($mediaFiles);
   //Build options
@@ -126,5 +152,5 @@ const isValidUrl = (str) => /^https?:\/\//.test(str);
 
 module.exports = {
   tweet,
-  reply
+  reply,
 };
