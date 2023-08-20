@@ -41,8 +41,8 @@ async function login($redirectedURL, $codeVerifier) {
       const $me=await loggedClient.v2.me();
       console.log(`Alright everything is done!\r\n`);
       console.log(`Username Loggedin: ${$me.data.username}\r\n\r\n`);
-      console.log(`Access Token:\r\n\r\n${accessToken}\r\n`);
-      console.log(`Refresh Token:\r\n\r\n${refreshToken}\r\n`);
+      console.log(`TWITTER_ACCESS_TOKEN=${accessToken}\r\n\r\n`);
+      console.log(`TWITTER_REFRESH_TOKEN=${refreshToken}\r\n\r\n`);
       console.log(`Expires in: ${expiresIn} seconds`);
   }catch(err){
     console.error('Error:'+err.messsage);
