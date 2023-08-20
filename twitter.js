@@ -9,10 +9,12 @@ const { getTwitter, updateTwitter } = require("./dynamodb");
 let client;
 
 async function init() {
+  let $act='refresh';
   //Get From Dynamo
   $data = await getTwitter();
   //First time init from env
   if ($data === false) {
+    $act='first';
     await updateTwitter({
       accessToken: process.env.TWITTER_ACCESS_TOKEN,
       refreshToken: process.env.TWITTER_REFRESH_TOKEN,
@@ -26,6 +28,7 @@ async function init() {
     $data?.timestamp &&
     Date.now() - $data.timestamp < $data.expiresIn * 1000
   ) {
+    $act='not expired';
     return new TwitterApi($data.accessToken);
   }
   //Refresh it while it's expired
@@ -44,12 +47,14 @@ async function init() {
         refreshToken: req.refreshToken,
         expiresIn: req.expiresIn,
       });
+      console.log('test user name:',await req.client.v2.me()?.data?.name);
       return req.client;
     }else{
       throw new Error('Couldnt refresh token');
     }
   } catch (error) {
-    console.error("Error in refreshing token", error.message,err?.errors[0]?.message || null);
+    console.log('Action of twitter access token:',$act);
+    console.error("Error in refreshing token", error.message,err?.errors[0]?.message ?? null);
     throw error;
   }
 }
