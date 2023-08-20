@@ -1,6 +1,6 @@
 {
   "name": "irancrypto-twitter-bot",
-  "version": "1.0.0",
+  "version": "0.1",
   "description": "IranCrypto.market twitter bot which send daily stats and trends",
   "main": "index.js",
   "scripts": {
