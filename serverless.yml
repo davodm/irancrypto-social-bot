@@ -22,6 +22,7 @@ provider:
   runtime: nodejs18.x
   stage: prod
   region: eu-west-1
+  timeout: 60
   iam:
     role:
       statements:
