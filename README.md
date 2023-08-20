@@ -29,7 +29,7 @@ OPENAI_ORGANIZATION=<Your Organization API Key>
 DYNAMODB_TABLE=<Your Dynamo DB table name>
 IRANCRYPTO_API_KEY=<Your API Key on IranCrypto>
 
-TWITTER_ACESS_TOKEN=<Your twitter access token that you wont have it first>
+TWITTER_ACCESS_TOKEN=<Your twitter access token that you wont have it first>
 TWITTER_REFRESH_TOKEN=<Your twitter refresh token that you wont have it first>
 
 TWITTER_CLIENT_ID=<Your Twitter application client ID>
