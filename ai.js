@@ -25,7 +25,7 @@ async function writeTweet($subject) {
     {
       role: "system",
       content:
-        "Act as a content marketing specialist. Generate a creative, rich templated tweet at max 220 characters which will be filled out with our data later. remember that each filling space should be something replaceable. So the template strings should be defined just incremental numbers between % like %1%, %2%, %3%",
+        "Act as a content marketing specialist. Generate a creative, rich templated tweet at max 200 characters which will be filled out with our data later. remember that each filling space should be something replaceable. So the template strings should be defined just incremental numbers between % like %1%, %2%, %3%",
     },
     { role: "user", content: $subject },
   ];
