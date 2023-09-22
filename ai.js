@@ -6,13 +6,21 @@ const openai = new OpenAI({
 });
 
 async function ask($messages) {
-  const result = await openai.chat.completions.create({
-    messages: $messages,
-    model: process.env.OPENAI_MODEL,
-    max_tokens: process.env.OPENAI_MODEL.includes("gpt-4") ? 5000 : 3000, //The maximum number of tokens to generate in the completion.
-    temperature: 0.2, //What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random
-  });
-
+  let result;
+  //Newer Moodels usechat/completions
+  if (process.env.OPENAI_MODEL.includes("gpt")) {
+    result = await openai.chat.completions.create({
+      messages: $messages,
+      model: process.env.OPENAI_MODEL,
+      max_tokens: process.env.OPENAI_MODEL.includes("gpt-4") ? 5000 : 3000, //The maximum number of tokens to generate in the completion.
+      temperature: 0.4, //What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random
+    });
+  }else{//Older models like text-davinci-003 and etc - not recommended at all because of finishing the length of text
+    result = await openai.completions.create({
+      model: process.env.OPENAI_MODEL,
+      prompt: $messages.map((m) => m.content).join("\n"),
+    });
+  }
   if (!result.choices && result.choices.length === 0) {
     throw new Error("No response received");
   }
@@ -31,9 +39,11 @@ async function writeTweet($subject) {
   ];
   try {
     const result = await ask(messages);
+    console.log('result:',result)
     if (result.length > 0) {
       return result[0].message.content;
     }
+    return null;
   } catch (err) {
     console.log("AI error: " + err.message);
     return null;
