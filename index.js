@@ -69,7 +69,7 @@ exports.handler = async function (event) {
  */
 function buildTweet($type, $content, $popularItems, $totalVolIRR) {
   // Remove double quotes from the beginning and end of the string if they exist
-  if ($content.startsWith('"') && $content.endsWith('"')) {
+  if ($content && $content.startsWith('"') && $content.endsWith('"')) {
     $content = $content.slice(1, -1);
   }
   switch ($type.toLowerCase()) {
