@@ -1,7 +1,7 @@
-const { getPopular } = require("./api");
-const { tweet } = require("./twitter");
-const { writeTweet } = require("./ai");
-const dynamodb = require("./dynamodb");
+const { getPopular } = require("./src/api");
+const { tweet } = require("./src/twitter");
+const { writeTweet } = require("./src/ai");
+const { getLastRunTime, updateLastRunTime } = require("./src/dynamodb");
 const numeral = require("numeral");
 
 exports.handler = async function (event) {
@@ -23,7 +23,7 @@ exports.handler = async function (event) {
     };
 
     //Last run check
-    const lastRun = await dynamodb.getLastRunTime();
+    const lastRun = await getLastRunTime();
     if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
       throw new Error("Last run is less than one hour!");
     }
@@ -50,10 +50,10 @@ exports.handler = async function (event) {
     }
 
     //Update last run
-    await dynamodb.updateLastRunTime(lastKey);
+    await updateLastRunTime(lastKey);
 
     //Out
-    console.log('Tweet sent successfully!',post);
+    console.log("Tweet sent successfully!", post);
   } catch (err) {
     console.error(err);
   }
@@ -105,7 +105,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
 
 /**
  * Convert to bold character, ideal for tweets
- * @param {string} text 
+ * @param {string} text
  * @returns {string}
  */
 function convertToBold(text) {
@@ -127,7 +127,7 @@ function convertToBold(text) {
 
 /**
  * Line break before hashtag
- * @param {string} inputText 
+ * @param {string} inputText
  * @returns {string}
  */
 function lineBreak(inputText) {
