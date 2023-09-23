@@ -12,14 +12,14 @@ exports.handler = async function (event) {
     let totalVolIRR = 0;
     popularItems.forEach((item) => {
       totalVolIRR += item.irr.volume;
-      item.irrfvol = abbreviateNumber(item.irr.volume,1,false); //Formatted version
+      item.irrfvol = abbreviateNumber(item.irr.volume, 1, false); //Formatted version
     });
 
     //Tweets subject
     const tweets = {
       trends:
-        "write about top 3 crypto trends in past 24 hours in Iran only the name and volume of transactions in IRR",
-      vol: "write about how much was the whole crypto volume of local exchanges in past 24 hours in Iran (use IRR currency)",
+        "Write about the top 3 crypto trends in the past 24 hours in Iran. Include only the name and volume in IRR currency. Please format each trend on a new line for clarity.",
+      vol: "Write about the total volume of crypto transactions in Iran in the past 24 hours, all in IRR currency",
     };
 
     //Last run check
@@ -94,7 +94,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
     case "vol":
       $content = $content.replace(
         `%1%`,
-        abbreviateNumber($totalVolIRR,1,true)
+        abbreviateNumber($totalVolIRR, 1, true)
       );
       break;
     default:
