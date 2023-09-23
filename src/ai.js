@@ -39,13 +39,12 @@ async function writeTweet($subject) {
   ];
   try {
     const result = await ask(messages);
-    console.log('result:',result)
     if (result.length > 0) {
       return result[0].message.content;
     }
     return null;
   } catch (err) {
-    console.log("AI error: " + err.message);
+    console.error(err);
     return null;
   }
 }
