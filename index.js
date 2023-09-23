@@ -2,7 +2,7 @@ const { getPopular } = require("./src/api");
 const { tweet } = require("./src/twitter");
 const { writeTweet } = require("./src/ai");
 const { getLastRunTime, updateLastRunTime } = require("./src/dynamodb");
-const numeral = require("numeral");
+const { abbreviateNumber } = require("./src/number");
 
 exports.handler = async function (event) {
   //Get Data from API
@@ -12,7 +12,7 @@ exports.handler = async function (event) {
     let totalVolIRR = 0;
     popularItems.forEach((item) => {
       totalVolIRR += item.irr.volume;
-      item.irrfvol = numeral(item.irr.volume).format("0,0.0a"); //Formatted version
+      item.irrfvol = abbreviateNumber(item.irr.volume,1,false); //Formatted version
     });
 
     //Tweets subject
@@ -32,6 +32,7 @@ exports.handler = async function (event) {
     delete tweets[lastRun.actionSubject];
     let post;
     let lastKey;
+    console.log("popular:", popularItems);
     //Pick one and tweet from the list
     for await (const [key, value] of Object.entries(tweets)) {
       post = buildTweet(
@@ -93,7 +94,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
     case "vol":
       $content = $content.replace(
         `%1%`,
-        numeral($totalVolIRR).format("0,0.00a")
+        abbreviateNumber($totalVolIRR,1,true)
       );
       break;
     default:
