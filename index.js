@@ -1,8 +1,8 @@
-const { getPopular } = require("./api");
-const { tweet } = require("./twitter");
-const { writeTweet } = require("./ai");
-const dynamodb = require("./dynamodb");
-const numeral = require("numeral");
+const { getPopular } = require("./src/api");
+const { tweet } = require("./src/twitter");
+const { writeTweet } = require("./src/ai");
+const { getLastRunTime, updateLastRunTime } = require("./src/dynamodb");
+const { abbreviateNumber } = require("./src/number");
 
 exports.handler = async function (event) {
   //Get Data from API
@@ -12,7 +12,7 @@ exports.handler = async function (event) {
     let totalVolIRR = 0;
     popularItems.forEach((item) => {
       totalVolIRR += item.irr.volume;
-      item.irrfvol = numeral(item.irr.volume).format("0,0.0a"); //Formatted version
+      item.irrfvol = abbreviateNumber(item.irr.volume,1,false); //Formatted version
     });
 
     //Tweets subject
@@ -23,7 +23,7 @@ exports.handler = async function (event) {
     };
 
     //Last run check
-    const lastRun = await dynamodb.getLastRunTime();
+    const lastRun = await getLastRunTime();
     if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
       throw new Error("Last run is less than one hour!");
     }
@@ -32,6 +32,7 @@ exports.handler = async function (event) {
     delete tweets[lastRun.actionSubject];
     let post;
     let lastKey;
+    console.log("popular:", popularItems);
     //Pick one and tweet from the list
     for await (const [key, value] of Object.entries(tweets)) {
       post = buildTweet(
@@ -50,10 +51,10 @@ exports.handler = async function (event) {
     }
 
     //Update last run
-    await dynamodb.updateLastRunTime(lastKey);
+    await updateLastRunTime(lastKey);
 
     //Out
-    console.log('Tweet sent successfully!',post);
+    console.log("Tweet sent successfully!", post);
   } catch (err) {
     console.error(err);
   }
@@ -68,6 +69,10 @@ exports.handler = async function (event) {
  * @returns {string}
  */
 function buildTweet($type, $content, $popularItems, $totalVolIRR) {
+  // Remove double quotes from the beginning and end of the string if they exist
+  if ($content && $content.startsWith('"') && $content.endsWith('"')) {
+    $content = $content.slice(1, -1);
+  }
   switch ($type.toLowerCase()) {
     case "trends":
       let placeholderIndex = 1;
@@ -75,7 +80,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
         //Name
         $content = $content.replace(
           `%${placeholderIndex}%`,
-          convertToBold($popularItems[i].name_en)
+          $popularItems[i].name_en
         );
         placeholderIndex++;
         //Vol
@@ -89,7 +94,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
     case "vol":
       $content = $content.replace(
         `%1%`,
-        numeral($totalVolIRR).format("0,0.00a")
+        abbreviateNumber($totalVolIRR,1,true)
       );
       break;
     default:
@@ -100,30 +105,8 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
 }
 
 /**
- * Convert to bold character, ideal for tweets
- * @param {string} text 
- * @returns {string}
- */
-function convertToBold(text) {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const bold_chars =
-    "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵";
-  let result = "";
-  for (const char of text) {
-    const index = chars.indexOf(char);
-    if (index !== -1) {
-      result += bold_chars.charAt(index);
-    } else {
-      result += char; // If character not in the mapping, keep it unchanged
-    }
-  }
-  return result;
-}
-
-/**
  * Line break before hashtag
- * @param {string} inputText 
+ * @param {string} inputText
  * @returns {string}
  */
 function lineBreak(inputText) {

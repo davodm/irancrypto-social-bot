@@ -5,16 +5,25 @@
 const { TwitterApi } = require("twitter-api-v2");
 const { readFileSync } = require("fs");
 const fetch = require("node-fetch");
-const { getTwitter, updateTwitter } = require("./dynamodb");
+const { isOffline } = require("./env");
 let client;
 
 async function init() {
-  let $act='refresh';
+  // Import Dynamo DB on serverless
+  if (!isOffline()) {
+    ({ getTwitter, updateTwitter } = await import(
+      "./dynamodb.js"
+    ));
+  }else{
+    // Return client with env tokens
+    return new TwitterApi(process.env.TWITTER_ACCESS_TOKEN);
+  }
+  let $act = "refresh";
   //Get From Dynamo
   $data = await getTwitter();
   //First time init from env
   if ($data === false) {
-    $act='first';
+    $act = "first";
     await updateTwitter({
       accessToken: process.env.TWITTER_ACCESS_TOKEN,
       refreshToken: process.env.TWITTER_REFRESH_TOKEN,
@@ -28,7 +37,7 @@ async function init() {
     $data?.timestamp &&
     Date.now() - $data.timestamp < $data.expiresIn * 1000
   ) {
-    $act='not expired';
+    $act = "not expired";
     return new TwitterApi($data.accessToken);
   }
   //Refresh it while it's expired
@@ -47,14 +56,22 @@ async function init() {
         refreshToken: req.refreshToken,
         expiresIn: req.expiresIn,
       });
-      console.log('test user name:',await req.client.v2.me()?.data?.name);
+      if(isENV('development')){
+        console.log("refreshed twitter user name:", await req.client.v2.me()?.data?.name);
+      }
       return req.client;
-    }else{
-      throw new Error('Couldnt refresh token');
+    } else {
+      throw new Error("Couldnt refresh token");
     }
   } catch (error) {
-    console.log('Action of twitter access token:',$act);
-    console.error("Error in refreshing token", error.message,err?.errors[0]?.message ?? null);
+    if(isENV('development')){
+      console.log("Action of twitter access token:", $act);
+      console.error(
+        "Error in refreshing token",
+        error.message,
+        err?.errors[0]?.message ?? null
+      );
+    }
     throw error;
   }
 }
@@ -67,7 +84,7 @@ async function init() {
 async function tweet($text, $mediaFiles = []) {
   //Init client to use access token or refresh it
   if (!client) {
-    client=await init();
+    client = await init();
   }
   const $mediaIDs = await prepareMediaFiles($mediaFiles);
   //Build options
@@ -84,7 +101,7 @@ async function tweet($text, $mediaFiles = []) {
 async function reply($tweetID, $text, $mediaFiles = []) {
   //Init client to use access token or refresh it
   if (!client) {
-    client=await init();
+    client = await init();
   }
   const $mediaIDs = await prepareMediaFiles($mediaFiles);
   //Build options
