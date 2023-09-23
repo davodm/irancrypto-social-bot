@@ -80,7 +80,7 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
         //Name
         $content = $content.replace(
           `%${placeholderIndex}%`,
-          convertToBold($popularItems[i].name_en)
+          $popularItems[i].name_en
         );
         placeholderIndex++;
         //Vol
@@ -102,28 +102,6 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
       break;
   }
   return lineBreak($content);
-}
-
-/**
- * Convert to bold character, ideal for tweets
- * @param {string} text
- * @returns {string}
- */
-function convertToBold(text) {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  const bold_chars =
-    "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵";
-  let result = "";
-  for (const char of text) {
-    const index = chars.indexOf(char);
-    if (index !== -1) {
-      result += bold_chars.charAt(index);
-    } else {
-      result += char; // If character not in the mapping, keep it unchanged
-    }
-  }
-  return result;
 }
 
 /**
