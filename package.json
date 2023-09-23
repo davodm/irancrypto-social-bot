@@ -1,11 +1,11 @@
 {
-  "name": "irancrypto-twitter-bot",
-  "version": "0.1",
-  "description": "IranCrypto.market twitter bot which send daily stats and trends",
+  "name": "irancrypto-social-bot",
+  "version": "0.2",
+  "description": "IranCrypto.market social bot which send daily stats and trends to different platforms",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "helper": "node twitterlogin.js",
+    "twitter": "node twitterlogin.js",
     "deploy": "serverless deploy"
   },
   "repository": {
@@ -14,9 +14,10 @@
   },
   "keywords": [
     "twitter",
-    "iran",
+    "instagram",
     "cryptocurrency",
-    "tweet",
+    "irancrypto",
+    "serverless",
     "nodejs"
   ],
   "author": "Davod Mozafari",

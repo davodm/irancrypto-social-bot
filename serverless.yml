@@ -1,4 +1,4 @@
-service: irancrypto-twitter-bot
+service: irancrypto-social-bot
 
 frameworkVersion: "3"
 
@@ -36,7 +36,7 @@ provider:
 
 functions:
   tweet:
-    handler: index.handler
+    handler: tweet.handler
     events:
       - schedule: cron(0 20,21 * * ? *)
 
