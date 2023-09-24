@@ -35,7 +35,7 @@ TWITTER_REFRESH_TOKEN=<Your twitter refresh token that you wont have it first>
 TWITTER_CLIENT_ID=<Your Twitter application client ID>
 TWITTER_CLIENT_SECRET=<Your Twitter application client Secret>
 
-CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with your Twitter app config
+TWITTER_CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with your Twitter app config
 ```
 
 5. In order to authenticate and configure Twitter credentials, use the helper cli tool:
