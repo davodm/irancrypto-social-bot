@@ -7,6 +7,7 @@ const { IgApiClient } = require("instagram-private-api");
 const { readFileSync, existsSync } = require("fs");
 const ig = new IgApiClient();
 let user;
+
 /**
  * Basic Login to Instagram
  */
@@ -29,16 +30,22 @@ async function login() {
   }
 }
 
+/**
+ * Publish an image
+ * @param {*} file 
+ * @param {string} caption 
+ * @returns {object}
+ */
 async function publishImage(file, caption) {
   // Login to account first
   await login();
-  if (!existsSync(file)) {
+  if (typeof file === "string" && !existsSync(file)) {
     throw new Error("File not found");
   }
   try {
     const request = await ig.publish.photo({
       // read the file into a Buffer
-      file: readFileSync(file),
+      file: typeof file === "string" ? readFileSync(file) : file, //Supporting readFile and buffer
       caption: caption,
     });
     return {
@@ -50,21 +57,29 @@ async function publishImage(file, caption) {
   }
 }
 
+/**
+ * Publish a video
+ * @param {*} videoFile 
+ * @param {*} videoCover 
+ * @param {string} caption 
+ * @returns {object}
+ */
 async function publishVideo(videoFile, videoCover, caption) {
   // Login to account first
   await login();
 
-  if (!existsSync(videoFile)) {
+  if (typeof videoFile === "string" && !existsSync(videoFile)) {
     throw new Error("Video file not found");
   }
-  if (!existsSync(videoCover)) {
+  if (typeof videoCover === "string" && !existsSync(videoCover)) {
     throw new Error("Video cover file not found");
   }
 
   try {
     const request = await ig.publish.video({
       // read the file into a Buffer
-      video: readFileSync(videoFile),
+      video:
+        typeof videoFile === "string" ? readFileSync(videoFile) : videoFile, //Supporting buffer and readFile
       coverImage: readFileSync(videoCover),
       caption: caption,
     });
@@ -77,7 +92,30 @@ async function publishVideo(videoFile, videoCover, caption) {
   }
 }
 
+/**
+ * Publish a story
+ * @param {*} file 
+ * @returns {boolean}
+ */
+async function publishStory(file) {
+  // Login to account first
+  await login();
+  if (typeof file === "string" && !existsSync(file)) {
+    throw new Error("File not found");
+  }
+  try {
+    const request = await ig.publish.story({
+      // read the file into a Buffer
+      file: typeof file === "string" ? readFileSync(file) : file, //Supporting readFile and buffer
+    });
+    return true;
+  } catch (error) {
+    throw error;
+  }
+}
+
 module.exports = {
   publishImage,
   publishVideo,
+  publishStory,
 };
