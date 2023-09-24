@@ -1,6 +1,7 @@
 /**
  * Twitter helper to write the content
  * Could get improved by TwitterApiRateLimitPlugin
+ * Using "twitter-api-v2": 1.15.1
  */
 const { TwitterApi } = require("twitter-api-v2");
 const { readFileSync } = require("fs");
