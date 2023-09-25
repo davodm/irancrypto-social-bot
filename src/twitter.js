@@ -5,16 +5,14 @@
 const { TwitterApi } = require("twitter-api-v2");
 const { readFileSync } = require("fs");
 const fetch = require("node-fetch");
-const { isOffline } = require("./env");
+const { isOffline, isENV } = require("./env");
 let client;
 
 async function init() {
   // Import Dynamo DB on serverless
   if (!isOffline()) {
-    ({ getTwitter, updateTwitter } = await import(
-      "./dynamodb.js"
-    ));
-  }else{
+    ({ getTwitter, updateTwitter } = await import("./dynamodb.js"));
+  } else {
     // Return client with env tokens
     return new TwitterApi(process.env.TWITTER_ACCESS_TOKEN);
   }
@@ -56,15 +54,18 @@ async function init() {
         refreshToken: req.refreshToken,
         expiresIn: req.expiresIn,
       });
-      if(isENV('development')){
-        console.log("refreshed twitter user name:", await req.client.v2.me()?.data?.name);
+      if (isENV("development")) {
+        console.log(
+          "refreshed twitter user name:",
+          await req.client.v2.me()?.data?.name
+        );
       }
       return req.client;
     } else {
       throw new Error("Couldnt refresh token");
     }
   } catch (error) {
-    if(isENV('development')){
+    if (isENV("development")) {
       console.log("Action of twitter access token:", $act);
       console.error(
         "Error in refreshing token",
