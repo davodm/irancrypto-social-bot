@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<link rel="stylesheet" href="https://use.typekit.net/sfb0qnc.css">
+</head>
+
+<body style="width: 1024px; height: 1024px; max-height: 1024px;background: white;margin:0;font-family: halyard-display;">
+	<div style="width: 100%; height: 100%; position: relative; display: block;overflow: hidden;">
+
+		<img src="../images/logo-bg-half.png" style="position: absolute;left:0;top:112px;z-index:-1;pointer-events: none; height: 800px;">
+
+		<div
+			style="width: 615px; border-radius: 50vh; border: 1px #DCDCDC solid; display: block; margin: 20px auto;padding-bottom: 10px;">
+			<h2
+				style="color: #003940; font-size: 50px; font-weight: 400; text-align: center;line-height: 1.4;margin:0;">
+				{{title}}
+			</h2>
+			{{#if subtitle}}
+			<h4
+				style="color: #016A77; font-size: 26px; font-weight: 300; text-align: center;line-height: 1.4;margin:0;">
+				{{subtitle}}
+			</h4>
+			{{/if}}
+		</div>
+
+		<div style="width:850px; max-height:650px;display: block; margin:20px auto 0 auto;z-index:1;">
+
+			<table
+				style="width:100%; border:0; font-weight:200; font-size:26px;text-align: left;line-height: 2.2;border-collapse: collapse;">
+				<tr style="border-bottom: 2px #003A40 solid;">
+					<th style="white-space: nowrap;">Token</th>
+					<th>Average Price</th>
+					<th>Traded Volume</th>
+				</tr>
+				{{#each tokens}}
+				<tr>
+					<td style="word-break: break-all;">
+						<img src="{{icon}}" style="width: 30px; height: 30px; margin-right: 10px; vertical-align: middle;">
+						{{name}}
+					</td>
+					<td>{{price}}</td>
+					<td>{{volume}}</td>
+				</tr>
+				{{/each}}
+			</table>
+
+			<div
+				style="width:100%;margin-top:80px;font-weight: 300;display: flex;flex-wrap: nowrap;justify-content: space-between;align-items: center;">
+				<div style="color: #003940;">
+					<span style="font-size:25px;">@irancryptomarket</span>
+					<br>
+					<span style="font-size:18px;">Last update: {{lastUpdate}}</span>
+				</div>
+				<img src="../images/logo-footer-dark.png" style="max-width: 300px;max-height: 68px;">
+			</div>
+
+		</div>
+
+	</div>
+</body>
+
+</html>
