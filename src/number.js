@@ -24,6 +24,35 @@ const abbreviateNumber = (number, decimal = 1, long = false) => {
   return `${numberFixed}${tier[long ? "long" : "symbol"]}`;
 };
 
+/**
+ * Format numbers with decimal places
+ * @param {number} amount 
+ * @returns {string}
+ */
+function numFormat(amount) {
+  let decimal = 0;
+  if (amount < 10) {
+    decimal = 1;
+  }
+  if (amount < 1) {
+    decimal = 2;
+  }
+  if (amount < 0.1) {
+    decimal = 3;
+  }
+  if (amount < 0.01) {
+    decimal = 4;
+  }
+  if (amount < 0.001) {
+    decimal = 5;
+  }
+  if (amount < 0.0001) {
+    decimal = 6;
+  }
+  return amount.toLocaleString("en-US", { minimumFractionDigits: decimal });
+}
+
 module.exports = {
   abbreviateNumber,
+  numFormat
 };
