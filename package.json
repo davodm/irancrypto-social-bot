@@ -28,9 +28,9 @@
   },
   "homepage": "https://github.com/davodm/irancrypto-twitter-bot#readme",
   "dependencies": {
-    "canvas": "^2.11.2",
     "file-type": "^18.5.0",
     "instagram-private-api": "^1.45.3",
+    "node-html-to-image": "^4.0.0",
     "openai": "^4.10.0",
     "re2": "^1.20.3",
     "twitter-api-v2": "^1.15.1"
