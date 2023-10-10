@@ -6,11 +6,14 @@ const { abbreviateNumber, numFormat } = require("./src/number");
 const { isOffline } = require("./src/env");
 const { publishImage } = require("./src/instagram");
 const { writeCaption } = require("./src/ai");
+const { updateLastRunTime } = require("./src/dynamodb");
 
 exports.handler = async function (event) {
   try {
     // Run weekly recap
     await weeklyRecap();
+    // Update last run time on DynamoDB
+    updateLastRunTime("instagram", { type: "weekly-recap" });
   } catch (err) {
     console.error(err);
   }
