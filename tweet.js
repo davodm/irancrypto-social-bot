@@ -32,7 +32,6 @@ exports.handler = async function (event) {
     delete tweets[lastRun.actionSubject];
     let post;
     let lastKey;
-    console.log("popular:", popularItems);
     //Pick one and tweet from the list
     for await (const [key, value] of Object.entries(tweets)) {
       post = buildTweet(
