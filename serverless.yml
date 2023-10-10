@@ -40,6 +40,11 @@ functions:
     events:
       - schedule: cron(0 20,21 * * ? *)
 
+  instagram:
+    handler: instagram.handler
+    events:
+      - schedule: cron(0 20 ? * FRI *)
+
 resources:
   Resources:
     ProjectTable:
