@@ -2,17 +2,13 @@ const fs = require("fs");
 const path = require("path");
 const { getRecap } = require("./src/api");
 const { abbreviateNumber, numFormat } = require("./src/number");
-const { isOffline } = require("./src/env");
 const { publishImage } = require("./src/instagram");
 const { writeCaption } = require("./src/ai");
 const { updateLastRunTime } = require("./src/dynamodb");
-let puppeteerCore, chromium;
-if(!isOffline()){
-  // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
-  // https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
-  puppeteerCore = require("puppeteer-core");
-  chromium = require("@sparticuz/chromium");
-}
+// Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
+// https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
+const puppeteerCore = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 const nodeHtmlToImage = require("node-html-to-image");
 
 exports.handler = async function (event) {
@@ -69,7 +65,7 @@ async function weeklyRecap() {
       "weekly.png"
     );
 
-    console.log('generated image:',image);
+    console.log("generated image:", image);
 
     if (!image) {
       throw new Error("Image not generated!");
@@ -103,48 +99,39 @@ async function createPostFromTemplate(templateName, data, outputFileName) {
     const templateSource = await fs.promises.readFile(templatePath, {
       encoding: "utf-8",
     });
-    // Output filedir
-    let $outputPath = "writable/ig/";
-    //Lambda is writable on /tmp/
-    if (!isOffline()) {
-      $outputPath = "/tmp/" + $outputPath;
-    }
+    // Output filedir on Lambda /tmp/
+    let $outputPath = "/tmp/writable/ig/";
     // Create the directory if it doesn't exist
     if (!fs.existsSync($outputPath)) {
       await fs.promises.mkdir($outputPath, { recursive: true });
     }
     // Change image paths to base64 URIs
     const renderedHtml = await changeImageSrcToBase64(templateSource);
-    // AWS Config
-    let AWSconf = {};
-    if (!isOffline() && chromium) {
-      AWSconf = {
-        puppeteer: puppeteerCore,
-        puppeteerArgs: {
-          args: chromium.args,
-          executablePath: await chromium.executablePath(),
-          headless: chromium.headless,
-          ignoreHTTPSErrors: true,
-          defaultViewport: chromium.defaultViewport,
-          args: [
-            ...chromium.args,
-            "--hide-scrollbars",
-            "--disable-web-security",
-          ],
-        },
-      };
-    }
     // Generate the image
     await nodeHtmlToImage({
       html: renderedHtml,
       content: data, // It already using Handlebars
       output: $outputPath + outputFileName,
       transparent: true,
-      ...AWSconf,
+      // Using Puppeteer on serverless
+      puppeteer: puppeteerCore,
+      puppeteerArgs: {
+        args: chromium.args,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+        defaultViewport: chromium.defaultViewport,
+        args: [
+          ...chromium.args,
+          "--hide-scrollbars",
+          "--disable-web-security",
+          "--no-sandbox",
+        ],
+      },
     });
     return $outputPath + outputFileName;
   } catch (error) {
-    console.error("Error:", error);
+    throw error;
   }
 }
 
