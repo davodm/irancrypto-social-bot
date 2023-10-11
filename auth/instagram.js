@@ -23,7 +23,8 @@ async function login() {
         process.env.IG_PASSWORD
       );
       // Show user
-      console.log(user);
+      console.log("Logged in as %s", user.username);
+      if(user?.category) console.log("Category:",user.category);
     })
     .catch(IgCheckpointError, async () => {
       console.log(ig.state.checkpoint); // Checkpoint info here
