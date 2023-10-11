@@ -65,7 +65,7 @@ $ npm run instagram-auth
 
 ## Installation
 1. Clone Repo
-2. Run `npm install`
+2. Run `npm install --no-bin-links`
 3. Create .env file and fill out the values as explained
 4. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
 
