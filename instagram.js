@@ -1,17 +1,13 @@
-const fs = require("fs");
-const path = require("path");
 const { getRecap } = require("./src/api");
 const { abbreviateNumber, numFormat } = require("./src/number");
 const { publishImage } = require("./src/instagram");
 const { writeCaption } = require("./src/ai");
 const { updateLastRunTime } = require("./src/dynamodb");
-// Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
-// https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
-const puppeteerCore = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const nodeHtmlToImage = require("node-html-to-image");
+const { createImageFromTemplate } = require("./src/html");
 
-exports.handler = async function (event) {
+exports.handler = async function (event, context) {
+  // Prevent timeout from waiting event loop - Chromium
+  context.callbackWaitsForEmptyEventLoop = false;
   try {
     // Run weekly recap
     await weeklyRecap();
@@ -50,7 +46,7 @@ async function weeklyRecap() {
       .slice(0, 10);
 
     // Create Image
-    const image = await createPostFromTemplate(
+    const image = await createImageFromTemplate(
       "table-light",
       {
         tokens,
@@ -80,121 +76,3 @@ async function weeklyRecap() {
     throw err;
   }
 }
-
-/**
- * Generate an image from a Handlebars template
- * @param {string} templateName
- * @param {object} data
- * @param {string} outputFileName
- * @returns {string} The path to the generated image
- */
-async function createPostFromTemplate(templateName, data, outputFileName) {
-  try {
-    const templatePath = path.join(
-      __dirname,
-      "static/templates",
-      templateName + ".html"
-    );
-    // Read the template file
-    const templateSource = await fs.promises.readFile(templatePath, {
-      encoding: "utf-8",
-    });
-    // Output filedir on Lambda /tmp/
-    let $outputPath = "/tmp/writable/ig/";
-    // Create the directory if it doesn't exist
-    if (!fs.existsSync($outputPath)) {
-      await fs.promises.mkdir($outputPath, { recursive: true });
-    }
-    // Change image paths to base64 URIs
-    const renderedHtml = await changeImageSrcToBase64(templateSource);
-    // Generate the image
-    await nodeHtmlToImage({
-      html: renderedHtml,
-      content: data, // It already using Handlebars
-      output: $outputPath + outputFileName,
-      transparent: true,
-      // Using Puppeteer on serverless
-      puppeteer: puppeteerCore,
-      puppeteerArgs: {
-        args: chromium.args,
-        executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
-        ignoreHTTPSErrors: true,
-        defaultViewport: chromium.defaultViewport,
-        args: [
-          ...chromium.args,
-          "--hide-scrollbars",
-          "--disable-web-security",
-          "--no-sandbox",
-        ],
-      },
-    });
-    return $outputPath + outputFileName;
-  } catch (error) {
-    throw error;
-  }
-}
-
-/**
- * Changing local file paths in <img> tags to base64 URIs
- * @param {string} htmlContent
- * @returns {string}
- */
-async function changeImageSrcToBase64(htmlContent) {
-  try {
-    const baseDir = path.join(__dirname, "static", "templates");
-    // Regular expression to match <img> tags with local file paths
-    const imgTagRegex = /<img[^>]*src=["']((?!https?:\/\/)[^"']+)["'][^>]*>/gi;
-
-    // Function to replace matched <img> tags with base64 URIs
-    const replaceImgTags = async (match) => {
-      try {
-        // Extract the src attribute value
-        const srcMatch = /src=["']((?!https?:\/\/)[^"']+)["']/i.exec(match);
-        if (!srcMatch) {
-          return match; // Return the original <img> tag if no src attribute is found
-        }
-        const imagePath = srcMatch[1];
-        // Skip if the image path is not well-formed
-        if (imagePath.startsWith("{{")) {
-          return match;
-        }
-        // Read the image file
-        const imagePathAbsolute = path.join(baseDir, imagePath);
-        const imageBuffer = await fs.promises.readFile(imagePathAbsolute);
-        const base64Image = Buffer.from(imageBuffer).toString("base64");
-        const mimeType = path.extname(imagePath).replace(".", "");
-        // Include any other attributes from the original <img> tag
-        return match.replace(
-          /src=["']((?!https?:\/\/)[^"']+)["']/i,
-          `src="data:image/${mimeType};base64,${base64Image}"`
-        );
-      } catch (error) {
-        console.error(
-          `Error processing image "${imagePath}": ${error.message}`
-        );
-        return match; // Return the original <img> tag if there was an error
-      }
-    };
-
-    // Replace <img> tags with base64 URIs
-    return htmlContent.replaceAsync(imgTagRegex, replaceImgTags);
-  } catch (error) {
-    throw error;
-  }
-}
-
-// Helper function to add asynchronous replace functionality to String
-String.prototype.replaceAsync = async function (regex, asyncFn) {
-  const promises = [];
-
-  this.replace(regex, (match, ...args) => {
-    const promise = asyncFn(match, ...args);
-    promises.push(promise);
-  });
-
-  const replacedValues = await Promise.all(promises);
-  return this.replace(regex, () => replacedValues.shift());
-};
-
-weeklyRecap().then().catch(console.log);

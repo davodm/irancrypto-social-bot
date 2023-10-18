@@ -18,6 +18,7 @@ async function login() {
   //Start Logging in via bluebird to catch the checkpoint
   bluebird
     .try(async () => {
+      // Login
       const user = await ig.account.login(
         process.env.IG_USERNAME,
         process.env.IG_PASSWORD
