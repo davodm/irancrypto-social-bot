@@ -29,12 +29,12 @@
   "homepage": "https://github.com/davodm/irancrypto-twitter-bot#readme",
   "dependencies": {
     "file-type": "^18.5.0",
+    "handlebars": "^4.7.8",
     "instagram-private-api": "^1.45.3",
-    "node-html-to-image": "^4.0.0",
-    "openai": "^4.10.0",
+    "openai": "^4.12.4",
     "puppeteer-core": "21.3.7",
     "re2": "^1.20.3",
-    "twitter-api-v2": "^1.15.1"
+    "twitter-api-v2": "^1.15.2"
   },
   "devDependencies": {
     "bluebird": "^3.7.2",
