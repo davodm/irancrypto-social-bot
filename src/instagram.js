@@ -5,6 +5,7 @@
 
 const { IgApiClient } = require("instagram-private-api");
 const { readFileSync, existsSync } = require("fs");
+const { isOffline, getENV } = require("./env");
 const ig = new IgApiClient();
 let user;
 
@@ -17,6 +18,27 @@ async function login() {
     if (process.env?.IG_PROXY) {
       ig.state.proxyUrl = process.env.IG_PROXY;
     }
+    let sessSave=false;
+    // Session Management on production - Dynamo DB
+    if(!isOffline()){
+      // Execute after each requests
+      ig.request.end$.subscribe(async () => {
+        if(!sessSave){
+          const serialized = await ig.state.serialize();
+          await saveSession(serialized);
+          sessSave=true;
+        }
+      });
+      // Restore session
+      const sess= await loadSession();
+      if (sess) {
+        // the string should be a JSON object
+        await ig.state.deserialize(sess);
+      }
+    }
+    // Simulate pre-login flow
+    await ig.simulate.preLoginFlow();
+    // Login
     user = await ig.account.login(
       process.env.IG_USERNAME,
       process.env.IG_PASSWORD
@@ -28,6 +50,46 @@ async function login() {
     );
     throw error;
   }
+}
+
+/**
+ * Save session to DynamoDB
+ * @param {object} sessData 
+ * @returns 
+ */
+async function saveSession(sessData){
+  let { updateInstagram } = await import(
+    "./dynamodb.js"
+  );
+  // this deletes the version info, so you'll always use the version provided by the library
+  // delete serialized.constants;
+  // replace constants
+  const appversion = getENV("IG_APP_VERSION", "227.0.0.12.117");
+  const appversionCode= getENV("IG_APP_VERSION_CODE", "323703830");
+  sessData.constants = {
+    ...sessData.constants,
+    APP_VERSION: appversion,
+    APP_VERSION_CODE: appversionCode,
+  }
+  // Save it to DynamoDB
+  return await updateInstagram({
+    session: JSON.stringify(sessData),
+  });
+}
+
+/**
+ * Restore session from DynamoDB
+ * @returns {object}
+ */
+async function loadSession(){
+  let { getInstagram } = await import(
+    "./dynamodb.js"
+  );
+  const instagram = await getInstagram();
+  if(instagram?.session){
+    return JSON.parse(instagram.session);
+  }
+  return null;
 }
 
 /**
