@@ -18,6 +18,9 @@ async function login() {
   //Start Logging in via bluebird to catch the checkpoint
   bluebird
     .try(async () => {
+      // Simulate pre-login flow
+      await ig.simulate.preLoginFlow();
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       // Login
       const user = await ig.account.login(
         process.env.IG_USERNAME,
