@@ -37,7 +37,9 @@ async function login() {
       }
     }
     // Simulate pre-login flow
-    await ig.simulate.preLoginFlow();
+    if(getENV("IG_PRELOGIN",'false') === 'true'){
+      await ig.simulate.preLoginFlow();
+    }
     // Login
     user = await ig.account.login(
       process.env.IG_USERNAME,
