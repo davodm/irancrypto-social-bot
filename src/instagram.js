@@ -66,6 +66,7 @@ async function saveSession(sessData){
   // this deletes the version info, so you'll always use the version provided by the library
   // delete serialized.constants;
   // replace constants
+  /*
   const appversion = getENV("IG_APP_VERSION", "227.0.0.12.117");
   const appversionCode= getENV("IG_APP_VERSION_CODE", "323703830");
   sessData.constants = {
@@ -73,6 +74,7 @@ async function saveSession(sessData){
     APP_VERSION: appversion,
     APP_VERSION_CODE: appversionCode,
   }
+  */
   // Save it to DynamoDB
   return await updateInstagram({
     session: JSON.stringify(sessData),
