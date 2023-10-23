@@ -19,11 +19,13 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     const template = await renderTemplate(templateName, data, true);
     // Open browser
     const browser = await puppeteerCore.launch({
-      //executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      // args: ['--force-color-profile=srgb',"--disable-web-security","--no-sandbox"],
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
       args: [
         ...chromium.args,
+        '--force-color-profile=srgb',
         "--hide-scrollbars",
         "--disable-web-security",
         "--no-sandbox",
@@ -32,6 +34,7 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     const page = await browser.newPage();
     // Set viewport to increase quality
     await page.setViewport({width: 1024, height: 1024, deviceScaleFactor: 3});
+    // await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
     // Set HTML Content
     await page.setContent(template);
     // Wait for any asynchronous operations to complete
@@ -149,15 +152,14 @@ String.prototype.replaceAsync = async function (regex, asyncFn) {
 
 /**
  * Decide whether to use a dark or light theme
- * @returns {string} "dark" or "light"
+ * @returns {string} "dark"/"light"/"black"
  */
 function getRandomTheme() {
-  // Generate a random number between 0 and 1
-  const random = Math.random();
-
-  // If the random number is less than 0.5, choose "dark," otherwise choose "light"
-  return random < 0.5 ? "dark" : "light";
+  const themes = ["black", "light", "dark"];
+  const randomIndex = Math.floor(Math.random() * themes.length);
+  return themes[randomIndex];
 }
+
 module.exports = {
   createImageFromTemplate,
   renderTemplate,
