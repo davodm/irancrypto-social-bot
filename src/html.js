@@ -19,6 +19,7 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     const template = await renderTemplate(templateName, data, true);
     // Open browser
     const browser = await puppeteerCore.launch({
+      //executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
       args: [
@@ -29,6 +30,8 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
       ],
     });
     const page = await browser.newPage();
+    // Set viewport to increase quality
+    await page.setViewport({width: 1024, height: 1024, deviceScaleFactor: 3});
     // Set HTML Content
     await page.setContent(template);
     // Wait for any asynchronous operations to complete
