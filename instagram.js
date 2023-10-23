@@ -3,7 +3,7 @@ const { abbreviateNumber, numFormat } = require("./src/number");
 const { publishImage } = require("./src/instagram");
 const { writeCaption } = require("./src/ai");
 const { updateLastRunTime } = require("./src/dynamodb");
-const { createImageFromTemplate } = require("./src/html");
+const { createImageFromTemplate, getRandomTheme } = require("./src/html");
 
 exports.handler = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
@@ -49,7 +49,7 @@ async function weeklyRecap() {
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-light",
+      "table-" + getRandomTheme(),
       {
         tokens,
         title: "Weekly Recap",

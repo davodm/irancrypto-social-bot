@@ -147,7 +147,19 @@ String.prototype.replaceAsync = async function (regex, asyncFn) {
   return this.replace(regex, () => replacedValues.shift());
 };
 
+/**
+ * Decide whether to use a dark or light theme
+ * @returns {string} "dark" or "light"
+ */
+function getRandomTheme() {
+  // Generate a random number between 0 and 1
+  const random = Math.random();
+
+  // If the random number is less than 0.5, choose "dark," otherwise choose "light"
+  return random < 0.5 ? "dark" : "light";
+}
 module.exports = {
   createImageFromTemplate,
   renderTemplate,
+  getRandomTheme
 };

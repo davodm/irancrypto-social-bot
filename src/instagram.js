@@ -11,6 +11,7 @@ let user;
 
 /**
  * Basic Login to Instagram
+ * @returns {boolean}
  */
 async function login() {
   try {
