@@ -14,30 +14,31 @@ let user;
  */
 async function login() {
   try {
+    // Generate Device ID
     ig.state.generateDevice(process.env.IG_USERNAME);
     if (process.env?.IG_PROXY) {
       ig.state.proxyUrl = process.env.IG_PROXY;
     }
-    let sessSave=false;
     // Session Management on production - Dynamo DB
-    if(!isOffline()){
+    if (getENV("IG_STORE_SESSION", "false") === "true" && !isOffline()) {
+      let sessSave = false;
       // Execute after each requests
       ig.request.end$.subscribe(async () => {
-        if(!sessSave){
+        if (!sessSave) {
           const serialized = await ig.state.serialize();
           await saveSession(serialized);
-          sessSave=true;
+          sessSave = true;
         }
       });
       // Restore session
-      const sess= await loadSession();
+      const sess = await loadSession();
       if (sess) {
         // the string should be a JSON object
         await ig.state.deserialize(sess);
       }
     }
     // Simulate pre-login flow
-    if(getENV("IG_PRELOGIN",'false') === 'true'){
+    if (getENV("IG_PRELOGIN", "false") === "true") {
       await ig.simulate.preLoginFlow();
     }
     // Login
@@ -50,19 +51,18 @@ async function login() {
     console.error(
       "Could not login into Instagram, could try authorizing through helper?"
     );
+    console.log("cd", error.code);
     throw error;
   }
 }
 
 /**
  * Save session to DynamoDB
- * @param {object} sessData 
- * @returns 
+ * @param {object} sessData
+ * @returns
  */
-async function saveSession(sessData){
-  let { updateInstagram } = await import(
-    "./dynamodb.js"
-  );
+async function saveSession(sessData) {
+  let { updateInstagram } = await import("./dynamodb.js");
   // this deletes the version info, so you'll always use the version provided by the library
   // delete serialized.constants;
   // replace constants
@@ -85,12 +85,10 @@ async function saveSession(sessData){
  * Restore session from DynamoDB
  * @returns {object}
  */
-async function loadSession(){
-  let { getInstagram } = await import(
-    "./dynamodb.js"
-  );
+async function loadSession() {
+  let { getInstagram } = await import("./dynamodb.js");
   const instagram = await getInstagram();
-  if(instagram?.session){
+  if (instagram?.session) {
     return JSON.parse(instagram.session);
   }
   return null;
@@ -98,8 +96,8 @@ async function loadSession(){
 
 /**
  * Publish an image
- * @param {*} file 
- * @param {string} caption 
+ * @param {*} file
+ * @param {string} caption
  * @returns {object}
  */
 async function publishImage(file, caption) {
@@ -125,9 +123,9 @@ async function publishImage(file, caption) {
 
 /**
  * Publish a video
- * @param {*} videoFile 
- * @param {*} videoCover 
- * @param {string} caption 
+ * @param {*} videoFile
+ * @param {*} videoCover
+ * @param {string} caption
  * @returns {object}
  */
 async function publishVideo(videoFile, videoCover, caption) {
@@ -160,7 +158,7 @@ async function publishVideo(videoFile, videoCover, caption) {
 
 /**
  * Publish a story
- * @param {*} file 
+ * @param {*} file
  * @returns {boolean}
  */
 async function publishStory(file) {

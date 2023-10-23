@@ -37,6 +37,7 @@ IG_USERNAME=<Your Instagram username>
 IG_PASSWORD=<Your Instagram password>
 IG_PROXY=<Your server proxy to use Instagram>
 IG_PRELOGIN=false //If you want to use prelogin simulation, set it to true
+IG_STORE_SESSION=true //If you want to store session on DynamoDB, set it to true
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
