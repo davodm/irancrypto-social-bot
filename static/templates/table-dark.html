@@ -6,7 +6,7 @@
 	<link rel="stylesheet" href="https://use.typekit.net/sfb0qnc.css">
 </head>
 
-<body style="width: 1024px; height: 1024px; max-height: 1024px;background: #003940;margin:0;font-family: halyard-display;color:#FFF;">
+<body class="tk-halyard-display" style="width: 1024px; height: 1024px; max-height: 1024px;background: #003940;margin:0;color:#FFF;">
 	<div style="width: 100%; height: 100%; position: relative; display: block;overflow: hidden;">
 
 		<img src="../images/logo-bg-half.png" style="position: absolute;left:0;top:112px;z-index:-1;pointer-events: none; height: 800px;">
@@ -25,18 +25,18 @@
 			{{/if}}
 		</div>
 
-		<div style="width:850px; max-height:650px;display: block; margin:20px auto 0 auto;z-index:1;">
+		<div style="width:850px; max-height:650px;display: block; margin:50px auto 0 auto;z-index:1;">
 
 			<table
 				style="width:100%; border:0; font-weight:200; font-size:26px;text-align: left;line-height: 2.2;border-collapse: collapse;">
-				<tr style="border-bottom: 2px #FFF solid;">
-					<th style="white-space: nowrap;">Token</th>
-					<th>Average Price</th>
-					<th>Traded Volume</th>
+				<tr style="border-bottom: 2px #FFF solid;font-size:28px;">
+					{{#each headers}}
+					<th>{{this}}</th>
+					{{/each}}
 				</tr>
 				{{#each tokens}}
 				<tr>
-					<td style="word-break: break-all;">
+					<td style="word-break: break-all; font-weight: 300;">
 						<img src="{{icon}}" style="width: 30px; height: 30px; margin-right: 10px; vertical-align: middle;">
 						{{name}}
 					</td>
@@ -47,7 +47,7 @@
 			</table>
 
 			<div
-				style="width:100%;margin-top:80px;font-weight: 300;display: flex;flex-wrap: nowrap;justify-content: space-between;align-items: center;">
+				style="width:100%;margin-top:70px;font-weight: 300;display: flex;flex-wrap: nowrap;justify-content: space-between;align-items: center;">
 				<div style="color: #FFF;">
 					<span style="font-size:25px;">@irancryptomarket</span>
 					<br>
