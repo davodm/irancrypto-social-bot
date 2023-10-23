@@ -36,6 +36,7 @@ TWITTER_CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with you
 IG_USERNAME=<Your Instagram username>
 IG_PASSWORD=<Your Instagram password>
 IG_PROXY=<Your server proxy to use Instagram>
+IG_PRELOGIN=false //If you want to use prelogin simulation, set it to true
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
@@ -65,7 +66,7 @@ $ npm run instagram-auth
 
 ## Installation
 1. Clone Repo
-2. Run `npm install --no-bin-links`
+2. Run `npm install`
 3. Create .env file and fill out the values as explained
 4. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
 

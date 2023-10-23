@@ -48,7 +48,7 @@ async function login() {
     return true;
   } catch (error) {
     console.error(
-      "Could not login into Instagram, could thry authorizing through helper?"
+      "Could not login into Instagram, could try authorizing through helper?"
     );
     throw error;
   }
