@@ -52,6 +52,7 @@ async function weeklyRecap() {
       "table-" + getRandomTheme(),
       {
         tokens,
+        headers:["Token","Average Price","Traded Volume"],
         title: "Weekly Recap",
         subtitle: `Total traded volume in past week: ${abbreviateNumber(
           Math.round(totalVol),
