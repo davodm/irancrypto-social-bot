@@ -1,11 +1,12 @@
 /**
  * Twitter helper to write the content
  * Could get improved by TwitterApiRateLimitPlugin
+ * Using "twitter-api-v2": 1.15.1
  */
 const { TwitterApi } = require("twitter-api-v2");
 const { readFileSync } = require("fs");
 const fetch = require("node-fetch");
-const { isOffline } = require("./env");
+const { isOffline, isENV } = require("./env");
 let client;
 
 async function init() {

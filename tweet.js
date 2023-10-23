@@ -23,7 +23,7 @@ exports.handler = async function (event) {
     };
 
     //Last run check
-    const lastRun = await getLastRunTime();
+    const lastRun = await getLastRunTime('tweet');
     if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
       throw new Error("Last run is less than one hour!");
     }
@@ -32,7 +32,6 @@ exports.handler = async function (event) {
     delete tweets[lastRun.actionSubject];
     let post;
     let lastKey;
-    console.log("popular:", popularItems);
     //Pick one and tweet from the list
     for await (const [key, value] of Object.entries(tweets)) {
       post = buildTweet(
@@ -50,8 +49,8 @@ exports.handler = async function (event) {
       await tweet(post);
     }
 
-    //Update last run
-    await updateLastRunTime(lastKey);
+    //Update last run time to know what was the last tweet
+    await updateLastRunTime('tweet',{actionSubject: lastKey});
 
     //Out
     console.log("Tweet sent successfully!", post);

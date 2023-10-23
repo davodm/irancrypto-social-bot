@@ -5,6 +5,11 @@ const openai = new OpenAI({
   timeout: 10 * 1000, // Timeout is in ms
 });
 
+/**
+ * Ask a question from Chat-GPT
+ * @param {string[]} $messages 
+ * @returns {string[]}
+ */
 async function ask($messages) {
   let result;
   //Newer Moodels usechat/completions
@@ -28,6 +33,11 @@ async function ask($messages) {
   return result.choices;
 }
 
+/**
+ * Write tweet templates
+ * @param {string} $subject 
+ * @returns {string}
+ */
 async function writeTweet($subject) {
   const messages = [
     {
@@ -50,7 +60,35 @@ async function writeTweet($subject) {
   }
 }
 
+/**
+ * Generate dynamic captions for Instagram
+ * @param {string} $subject 
+ * @returns {string}
+ */
+async function writeCaption($subject){
+  const messages = [
+    {
+      role: "system",
+      content:
+        `Act as a Content Marketing Specialist.
+        Create a rich caption with related hashtags (maximum 3) for instagram based on the subjects that are going to be provided by user.`,
+    },
+    { role: "user", content: $subject },
+  ];
+  try {
+    const result = await ask(messages);
+    if (result.length > 0) {
+      return result[0].message.content;
+    }
+    return null;
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+}
+
 module.exports = {
   ask,
   writeTweet,
+  writeCaption
 };

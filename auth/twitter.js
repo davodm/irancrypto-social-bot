@@ -11,7 +11,7 @@ const client = new TwitterApi({
 
 async function main() {
   const { url, codeVerifier, state } = client.generateOAuth2AuthLink(
-    process.env.CALLBACK_URL,
+    process.env.TWITTER_CALLBACK_URL,
     { scope: ["tweet.read", "tweet.write", "users.read", "offline.access"] }
   );
   console.log("\r\nSave Code verifierer below ->");
@@ -36,7 +36,7 @@ async function login($redirectedURL, $codeVerifier) {
       } = await client.loginWithOAuth2({
         code: urlParams.get("code"),
         codeVerifier: $codeVerifier,
-        redirectUri: process.env.CALLBACK_URL,
+        redirectUri: process.env.TWITTER_CALLBACK_URL,
       });
       const $me=await loggedClient.v2.me();
       console.log(`Alright everything is done!\r\n`);
