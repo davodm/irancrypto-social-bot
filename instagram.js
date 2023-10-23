@@ -13,6 +13,8 @@ exports.handler = async function (event, context) {
     await weeklyRecap();
     // Update last run time on DynamoDB
     updateLastRunTime("instagram", { type: "weekly-recap" });
+    // Log
+    console.log("Weekly recap published successfully on instagram!");
   } catch (err) {
     console.error(err);
   }
