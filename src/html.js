@@ -35,7 +35,17 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     //await page.waitForTimeout(1000);
     // Take a screenshot of the entire page
     const element = await page.$("body");
-    const imageBuffer = await element.screenshot({ omitBackground: true });
+    // Output filedir on Lambda /tmp/
+    let $outputPath = "/tmp/writable/ig/";
+    // Create the directory if it doesn't exist
+    if (!fs.existsSync($outputPath)) {
+      await fs.promises.mkdir($outputPath, { recursive: true });
+    }
+    // Take Screenshot and save it to file
+    await element.screenshot({
+      omitBackground: true,
+      path: $outputPath + outputFileName // Write on the disk
+    });
     // Close the browser
     //await page.close();
     const pages = await browser.pages();
@@ -43,14 +53,6 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
       await pages[i].close();
     }
     await browser.close();
-    // Output filedir on Lambda /tmp/
-    let $outputPath = "/tmp/writable/ig/";
-    // Create the directory if it doesn't exist
-    if (!fs.existsSync($outputPath)) {
-      await fs.promises.mkdir($outputPath, { recursive: true });
-    }
-    // Write the image to a file
-    await fs.promises.writeFile($outputPath + outputFileName, imageBuffer);
     return $outputPath + outputFileName;
   } catch (error) {
     throw error;

@@ -58,7 +58,7 @@ async function weeklyRecap() {
         )} IRR`,
         lastUpdate: new Date().toISOString().slice(0, 10),
       },
-      "weekly.png"
+      "weekly.jpg"
     );
 
     console.log("generated image:", image);
