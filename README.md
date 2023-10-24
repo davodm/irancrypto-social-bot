@@ -1,6 +1,6 @@
 # IranCrypto Market Social Media Bot
 
-The IranCrypto Market Social Media Bot is a powerful project that leverages Node.js and AWS Lambda to automate the generation of daily/weekly crypto market updates on social media platforms, including Twitter and Instagram. It utilizes the IranCrypto API to fetch data on the most popular cryptocurrencies and then generates insightful content, complete with engaging English-language tweets and Instagram posts.
+The IranCrypto Market Social Media Bot is a powerful project that leverages Node.js and AWS Lambda to automate the generation of daily/weekly crypto market updates on social media platforms, including Twitter, Telegram and Instagram. It utilizes the IranCrypto API to fetch data on the most popular cryptocurrencies and then generates insightful content, complete with engaging English-language tweets and Instagram posts.
 
 ### Features
 * **Crypto Market Data:** Fetches daily and weekly rankings of top cryptocurrencies from the IranCryptoMarket API.
@@ -8,6 +8,7 @@ The IranCrypto Market Social Media Bot is a powerful project that leverages Node
 * **Instagram Image Creation:** Generates images for Instagram posts using [Node HTML to image](https://www.npmjs.com/package/node-html-to-image), based on templates created for the project.
 * **Twitter Integration:** Posts generated content on Twitter using the [Twitter API V2](https://www.npmjs.com/package/twitter-api-v2), with credentials obtained using a CLI tool.
 * **Instagram Posting:** Shares the generated images as both posts and stories on Instagram, utilizing the [Instagram private API](https://www.npmjs.com/package/instagram-private-api).
+* **Telegram Posting:** Shares the generated images on Telegram channel, utilizing the [Node.JS Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
 * **Serverless Execution:** Runs daily via AWS Lambda on a cron schedule, ensuring maintenance-free execution and scalability.
 
 ## Setup & Usage
@@ -38,6 +39,9 @@ IG_PASSWORD=<Your Instagram password>
 IG_PROXY=<Your server proxy to use Instagram>
 IG_PRELOGIN=false //If you want to use prelogin simulation, set it to true
 IG_STORE_SESSION=true //If you want to store session on DynamoDB, set it to true
+
+TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
+TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
@@ -65,6 +69,10 @@ Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob
 $ npm run instagram-auth
 ```
 
+1. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
+
+```sh
+
 ## Installation
 1. Clone Repo
 2. Run `npm install`
@@ -73,10 +81,16 @@ $ npm run instagram-auth
 
 Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
 
+## Functionality
+- Twitter: Share two daily tweets about total market transactions and top 3 cryptocurrencies.
+- Instagram: Share a weekly post about 10 most traded cryptocurrencies.
+- Telegram: Share a daily post about 10 most traded cryptocurrencies.
+
 ### Cronjob
 Cronjob is set to run specificly for each controller:
 - Twitter: Every day at 8:00 & 9:00 PM.
 - Instagram: Every Friday at 8:00 PM.
+- Telegram: Every day at 9:01 PM.
 
 You can change cronjob settings from serverless.yml file.
 
