@@ -13,16 +13,18 @@ package:
     - '!./schemas/'
     - '!./coverage/'
     - '!./test/'
-    - '!./test.js'
-    - '!./twitterlogin.js'
+    - '!./test*.js'
+    - '!./auth/'
+    - '!./writable/'
     - '!./README.md'
+    - '!node_modules/puppeteer/.local-chromium/**'
 
 provider:
   name: aws
   runtime: nodejs18.x
   stage: prod
   region: eu-west-1
-  timeout: 60
+  timeout: 90
   iam:
     role:
       statements:
@@ -39,6 +41,20 @@ functions:
     handler: tweet.handler
     events:
       - schedule: cron(0 20,21 * * ? *)
+
+  instagram:
+    handler: instagram.handler
+    layers:
+      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
+    events:
+      - schedule: cron(0 20 ? * FRI *)
+  
+  telegram:
+    handler: telegram.handler
+    layers:
+      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
+    events:
+      - schedule: cron(1 21 * * ? *)
 
 resources:
   Resources:

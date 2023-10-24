@@ -1,20 +1,22 @@
 {
   "name": "irancrypto-social-bot",
-  "version": "0.2",
+  "version": "0.4",
   "description": "IranCrypto.market social bot which send daily stats and trends to different platforms",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "twitter": "node twitterlogin.js",
+    "twitter-auth": "node auth/twitter.js",
+    "instagram-auth": "node auth/instagram.js",
     "deploy": "serverless deploy"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davodm/irancrypto-twitter-bot.git"
+    "url": "git+https://github.com/davodm/irancrypto-social-bot.git"
   },
   "keywords": [
     "twitter",
     "instagram",
+    "telegram",
     "cryptocurrency",
     "irancrypto",
     "serverless",
@@ -23,16 +25,23 @@
   "author": "Davod Mozafari",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/davodm/irancrypto-twitter-bot/issues"
+    "url": "https://github.com/davodm/irancrypto-social-bot/issues"
   },
-  "homepage": "https://github.com/davodm/irancrypto-twitter-bot#readme",
+  "homepage": "https://github.com/davodm/irancrypto-social-bot#readme",
   "dependencies": {
     "file-type": "^18.5.0",
-    "openai": "^4.10.0",
-    "twitter-api-v2": "^1.15.1"
+    "handlebars": "^4.7.8",
+    "instagram-private-api": "^1.45.3",
+    "node-telegram-bot-api": "^0.63.0",
+    "openai": "^4.12.4",
+    "puppeteer-core": "21.3.7",
+    "re2": "^1.20.3",
+    "twitter-api-v2": "^1.15.2"
   },
   "devDependencies": {
+    "bluebird": "^3.7.2",
     "dotenv": "^16.3.1",
+    "inquirer": "^8.2.6",
     "prompt": "^1.3.0",
     "serverless": "^3.35.2",
     "serverless-dotenv-plugin": "^6.0.0"
