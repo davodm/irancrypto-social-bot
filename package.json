@@ -1,6 +1,6 @@
 {
   "name": "irancrypto-social-bot",
-  "version": "0.3",
+  "version": "0.4",
   "description": "IranCrypto.market social bot which send daily stats and trends to different platforms",
   "main": "index.js",
   "scripts": {
@@ -11,11 +11,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/davodm/irancrypto-twitter-bot.git"
+    "url": "git+https://github.com/davodm/irancrypto-social-bot.git"
   },
   "keywords": [
     "twitter",
     "instagram",
+    "telegram",
     "cryptocurrency",
     "irancrypto",
     "serverless",
@@ -24,9 +25,9 @@
   "author": "Davod Mozafari",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/davodm/irancrypto-twitter-bot/issues"
+    "url": "https://github.com/davodm/irancrypto-social-bot/issues"
   },
-  "homepage": "https://github.com/davodm/irancrypto-twitter-bot#readme",
+  "homepage": "https://github.com/davodm/irancrypto-social-bot#readme",
   "dependencies": {
     "file-type": "^18.5.0",
     "handlebars": "^4.7.8",
