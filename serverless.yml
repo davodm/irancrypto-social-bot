@@ -35,6 +35,11 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
           Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${env:DYNAMODB_TABLE}"
+          
+        - Effect: Allow
+          Action:
+            - lambda:GetLayerVersion
+          Resource: "arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3"
 
 functions:
   tweet:
@@ -42,15 +47,15 @@ functions:
     events:
       - schedule: cron(0 20,21 * * ? *)
 
-  instagram:
-    handler: instagram.handler
+  instagram-weekly:
+    handler: instagram.weekly
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
     events:
       - schedule: cron(0 20 ? * FRI *)
   
-  telegram:
-    handler: telegram.handler
+  telegram-daily:
+    handler: telegram.daily
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
     events:
