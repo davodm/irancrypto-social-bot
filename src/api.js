@@ -11,6 +11,7 @@ async function request($method, $params = {}) {
     const queryParams = new URLSearchParams($params);
     requestUrl += "?" + queryParams.toString();
   }
+  // send request
   const response = await fetch(requestUrl, {
     headers: {
       Language: "en",
@@ -45,11 +46,12 @@ async function getExchanges() {
 
 /**
  * Recap of the week/month for most traded tokens
- * @param {string} type weekly/monthly
+ * @param {string} type exchange/coin
+ * @param {string} interval weekly/monthly
  * @returns {object[]}
  */
-async function getRecap(type) {
-  return await request("recap", { type, limit: 50 });
+async function getRecap(type,interval) {
+  return await request("recap", { type,interval, limit: 50 });
 }
 
 module.exports = {

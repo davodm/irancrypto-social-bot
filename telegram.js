@@ -6,12 +6,12 @@ const { getENV } = require("./src/env");
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
-exports.handler = async function (event, context) {
+exports.daily = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
   try {
     // Run daily recap
-    await dailyRecap();
+    await dailyCoinsRecap();
     // Update last run time on DynamoDB
     updateLastRunTime("telegram", { type: "daily-recap" });
     // Log
@@ -22,12 +22,12 @@ exports.handler = async function (event, context) {
 };
 
 /**
- * Generate a weekly recap image and publish it on Instagram
+ * Generate a tokens weekly recap image and publish it on Instagram
  */
-async function dailyRecap() {
+async function dailyCoinsRecap() {
   try {
     // Get Data from API
-    const data = await getRecap("daily");
+    const data = await getRecap("coin","daily");
     // USDT Token
     // const usd= data.find((item) => item.has_iran && item.symbol === 'USDT');
     // Total Trade Volume
@@ -65,10 +65,8 @@ async function dailyRecap() {
       "daily.jpg"
     );
 
-    console.log("generated image:", image);
-
     if (!image) {
-      throw new Error("Image not generated!");
+      throw new Error("Image is not generated!");
     }
     // Get Caption from AI
     const caption = `
@@ -77,7 +75,7 @@ async function dailyRecap() {
 📊 Total Traded Volume Today: ${numFormat(Math.round(totalVol))} IRR
 
 Source: @irancrypto_market
-Follow us on <a href="http://instagram.com/irancryptomarket">Instagram @irancryptomarket</a>
+Follow us on <a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a>
 `;
 
     // Publish the image on Telegram channel
