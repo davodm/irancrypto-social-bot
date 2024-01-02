@@ -64,7 +64,7 @@ async function weeklyCoinRecap() {
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-" + getRandomTheme(),
+      "table-coin-" + getRandomTheme(),
       {
         tokens,
         headers:["Token","Average Price","Traded Volume"],
@@ -122,7 +122,7 @@ async function monthlyExchangeRecap() {
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-" + getRandomTheme(),
+      "table-exchange-" + getRandomTheme(),
       {
         tokens,
         headers:["Token","Average Price","Traded Volume"],

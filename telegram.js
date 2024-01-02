@@ -50,7 +50,7 @@ async function dailyCoinsRecap() {
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-" + getRandomTheme(),
+      "table-coin-" + getRandomTheme(),
       {
         tokens,
         headers: ["Token", "Average Price", "Traded Volume"],
