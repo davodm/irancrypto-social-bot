@@ -1,10 +1,11 @@
 const fs = require("fs");
 const path = require("path");
 const Handlebars = require("handlebars");
+const { getENV } = require("./env");
 // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
 // https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
 const puppeteerCore = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
+let chromium;
 
 /**
  * Generate an image from an HTML + Parsing via Handlebars
@@ -17,23 +18,37 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
   try {
     // Render Template to HTML
     const template = await renderTemplate(templateName, data, true);
-    // Open browser
-    const browser = await puppeteerCore.launch({
-      // executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      // args: ['--force-color-profile=srgb',"--disable-web-security","--no-sandbox"],
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
-      args: [
-        ...chromium.args,
-        '--force-color-profile=srgb',
-        "--hide-scrollbars",
-        "--disable-web-security",
-        "--no-sandbox",
-      ],
-    });
+    // Open Browser
+    let browser;
+    // Load Chromium on AWS Lambda
+    if (!getENV("CHROMIUM", null)) {
+      // Get Chromium data on AWS Lambda layer
+      chromium = await import("@sparticuz/chromium");
+      browser = await puppeteerCore.launch({
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+        args: [
+          ...chromium.args,
+          "--force-color-profile=srgb",
+          "--hide-scrollbars",
+          "--disable-web-security",
+          "--no-sandbox",
+        ],
+      });
+      // Define Chromium path manually via .env
+    } else {
+      browser = await puppeteerCore.launch({
+        executablePath: getENV("CHROMIUM", null),
+        args: [
+          "--force-color-profile=srgb",
+          "--disable-web-security",
+          "--no-sandbox",
+        ],
+      });
+    }
     const page = await browser.newPage();
     // Set viewport to increase quality
-    await page.setViewport({width: 1024, height: 1024, deviceScaleFactor: 3});
+    await page.setViewport({ width: 1024, height: 1024, deviceScaleFactor: 3 });
     // await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
     // Set HTML Content
     await page.setContent(template);
@@ -42,7 +57,8 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     // Take a screenshot of the entire page
     const element = await page.$("body");
     // Output filedir on Lambda /tmp/
-    let $outputPath = "/tmp/writable/ig/";
+    //let $outputPath = "/tmp/writable/ig/";
+    let $outputPath = "./";
     // Create the directory if it doesn't exist
     if (!fs.existsSync($outputPath)) {
       await fs.promises.mkdir($outputPath, { recursive: true });
@@ -50,7 +66,7 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     // Take Screenshot and save it to file
     await element.screenshot({
       omitBackground: true,
-      path: $outputPath + outputFileName // Write on the disk
+      path: $outputPath + outputFileName, // Write on the disk
     });
     // Close the browser
     //await page.close();
@@ -163,5 +179,5 @@ function getRandomTheme() {
 module.exports = {
   createImageFromTemplate,
   renderTemplate,
-  getRandomTheme
+  getRandomTheme,
 };
