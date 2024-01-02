@@ -42,6 +42,8 @@ IG_STORE_SESSION=true //If you want to store session on DynamoDB, set it to true
 
 TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
 TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
+
+CHROMIUM=<Your chromium path if you want to set it manually without AWS layers>
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
