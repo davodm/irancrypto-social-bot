@@ -24,6 +24,7 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     if (!getENV("CHROMIUM", null)) {
       // Get Chromium data on AWS Lambda layer
       chromium = await import("@sparticuz/chromium");
+      chromium = chromium.default; // Get default export
       browser = await puppeteerCore.launch({
         executablePath: await chromium.executablePath(),
         headless: chromium.headless,
