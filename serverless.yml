@@ -47,15 +47,22 @@ functions:
     events:
       - schedule: cron(0 20,21 * * ? *)
 
-  instagram-weekly:
-    handler: instagram.weekly
+  instagram-coinrecap-weekly:
+    handler: instagram.coinrecap
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
     events:
       - schedule: cron(0 20 ? * FRI *)
   
-  telegram-daily:
-    handler: telegram.daily
+  instagram-monthly:
+    handler: instagram.monthly
+    layers:
+      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
+    events:
+      - schedule: cron(30 20 L * ? *)
+  
+  telegram-coinrecap-daily:
+    handler: telegram.coinrecap
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
     events:

@@ -6,7 +6,12 @@ const { getENV } = require("./src/env");
 const TelegramBot = require("node-telegram-bot-api");
 const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
-exports.daily = async function (event, context) {
+/**
+ * Daily recap of the most traded tokens on the Iran's cryptocurrency market to publish on Telegram
+ * @param {*} event 
+ * @param {*} context 
+ */
+exports.coinrecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
   try {
@@ -62,7 +67,7 @@ async function dailyCoinsRecap() {
         )} IRR`,
         lastUpdate: new Date().toISOString().slice(0, 10),
       },
-      "daily.jpg"
+      "daily-coins.jpg"
     );
 
     if (!image) {

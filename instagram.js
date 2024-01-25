@@ -5,6 +5,12 @@ const { writeCaption } = require("./src/ai");
 const { updateLastRunTime } = require("./src/dynamodb");
 const { createImageFromTemplate, getRandomTheme } = require("./src/html");
 
+/**
+ * Weekly recap of the most traded tokens on the Iran's cryptocurrency market to publish on Instagram
+ * 
+ * @param {*} event 
+ * @param {*} context 
+ */
 exports.coinrecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
@@ -20,6 +26,11 @@ exports.coinrecap = async function (event, context) {
   }
 };
 
+/**
+ * Monthly recap of the most popular exchanges (based on transactions) in Iran's cryptocurrency market to publish on Instagram
+ * @param {*} event 
+ * @param {*} context 
+ */
 exports.exchangerecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
@@ -76,7 +87,7 @@ async function weeklyCoinRecap() {
         )} IRR`,
         lastUpdate: new Date().toISOString().slice(0, 10),
       },
-      "weekly.jpg"
+      "weekly-coins.jpg"
     );
 
     if (!image) {
@@ -100,41 +111,34 @@ async function monthlyExchangeRecap() {
   try {
     // Get Data from API
     const data = await getRecap("exchange","monthly");
-    // USDT Token
-    // const usd= data.find((item) => item.has_iran && item.symbol === 'USDT');
     // Total Trade Volume
-    const totalVol = data
-      .filter((item) => item.has_iran)
-      .reduce((acc, item) => acc + item.irr.volume, 0);
+    const totalVol = data.reduce((acc, item) => acc + item.volume, 0);
     // Filter Data
-    const tokens = data
-      .filter((item) => item.has_iran)
-      .map((item) => {
+    const exchanges = data.map((item) => {
         return {
           name: item.name_en,
-          price: "$" + numFormat(item.usd.price_avg),
           volume:
-            abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-          icon: item.icon,
+          numFormat(Math.round(item.volume), 1, true) + " IRR",
+          logo: item.logo,
         };
       })
       .slice(0, 10);
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-exchange-" + getRandomTheme(),
+      "table-exchange-light",
       {
-        tokens,
-        headers:["Token","Average Price","Traded Volume"],
-        title: "Weekly Recap",
-        subtitle: `Total traded volume in past week: ${abbreviateNumber(
+        exchanges,
+        headers:["Exchange","Traded Volume"],
+        title: "Exchanges Monthly Recap",
+        subtitle: `Total traded volume in past month: ${abbreviateNumber(
           Math.round(totalVol),
           0,
           true
         )} IRR`,
         lastUpdate: new Date().toISOString().slice(0, 10),
       },
-      "weekly.jpg"
+      "monthly-exchange.jpg"
     );
 
     if (!image) {
@@ -142,7 +146,7 @@ async function monthlyExchangeRecap() {
     }
     // Get Caption from AI
     const caption = await writeCaption(
-      "Weekly recap of the most traded tokens on the Iran's cryptocurrency market"
+      "Monthly recap of the most popular exchanges (based on transactions) in Iran's cryptocurrency market"
     );
     // Publish the image on IG
     await publishImage(image, caption);
