@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const Handlebars = require("handlebars");
-const { getENV } = require("./env");
+const { getENV, isOffline } = require("./env");
 // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
 // https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
 const puppeteerCore = require("puppeteer-core");
@@ -58,8 +58,7 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
     // Take a screenshot of the entire page
     const element = await page.$("body");
     // Output filedir on Lambda /tmp/
-    //let $outputPath = "/tmp/writable/ig/";
-    let $outputPath = "./";
+    const $outputPath = isOffline() ? "./" : "/tmp/writable/ig/";
     // Create the directory if it doesn't exist
     if (!fs.existsSync($outputPath)) {
       await fs.promises.mkdir($outputPath, { recursive: true });
