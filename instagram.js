@@ -36,9 +36,9 @@ exports.exchangerecap = async function (event, context) {
   context.callbackWaitsForEmptyEventLoop = false;
   try {
     // Run monthly recap on exchanges
-    //await monthlyExchangeRecap();
+    await monthlyExchangeRecap();
     // Update last run time on DynamoDB
-    //updateLastRunTime("instagram", { type: "monthly-exchangerecap" });
+    updateLastRunTime("instagram", { type: "monthly-exchangerecap" });
     // Log
     console.log("Weekly recap published successfully on instagram!");
   } catch (err) {
@@ -122,14 +122,13 @@ async function monthlyExchangeRecap() {
           logo: item.logo,
         };
       })
-      .slice(0, 10);
+      .slice(0, 5);
 
     // Create Image
     const image = await createImageFromTemplate(
-      "table-exchange-light",
+      "table-exchange-dark",
       {
         exchanges,
-        headers:["Exchange","Traded Volume"],
         title: "Exchanges Monthly Recap",
         subtitle: `Total traded volume in past month: ${abbreviateNumber(
           Math.round(totalVol),

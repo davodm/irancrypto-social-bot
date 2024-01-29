@@ -54,12 +54,12 @@ functions:
     events:
       - schedule: cron(0 20 ? * FRI *)
   
-  instagram-monthly:
-    handler: instagram.monthly
+  instagram-exchangerecap-monthly:
+    handler: instagram.exchangerecap
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:3 # Chromium v117
     events:
-      - schedule: cron(30 20 L * ? *)
+      - schedule: cron(30 20 L * ? *) # last day of the month at 20:30
   
   telegram-coinrecap-daily:
     handler: telegram.coinrecap
