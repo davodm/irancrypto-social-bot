@@ -71,7 +71,7 @@ async function init() {
       console.error(
         "Error in refreshing token",
         error.message,
-        err?.errors[0]?.message ?? null
+        error?.errors[0]?.message ?? null
       );
     }
     throw error;
