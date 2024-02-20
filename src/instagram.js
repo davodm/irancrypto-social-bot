@@ -1,97 +1,61 @@
 /**
- * Instagran helper to publish the content
- * using: "instagram-private-api": 1.45.3
+ * Instagran helper to publish the content using two ways of direct publishing and publishing through the Ayreshare
  */
-import { IgApiClient } from "instagram-private-api";
 import { readFileSync, existsSync } from "fs";
-import { isOffline, getENV } from "./env.js";
-const ig = new IgApiClient();
-let user;
+import {
+  publishImage as igPublishImage,
+  publishVideo as igPublishVideo,
+  publishStory as igPublishStory,
+} from "./igapi.js";
+import SocialPost from "social-post-api";
+import { getENV } from "./env.js";
+
+const ayreShare = new SocialPost(getENV("AYRESHARE_API_KEY"));
 
 /**
- * Basic Login to Instagram
- * @returns {boolean}
+ * Publish post through Ayreshare
+ * @param {*} file
+ * @param {string} caption
+ * @param {*} cover
+ * @param {boolean} story
+ * @returns {Promise<object>}
  */
-async function login() {
-  try {
-    // Generate Device ID
-    ig.state.generateDevice(process.env.IG_USERNAME);
-    if (process.env?.IG_PROXY) {
-      ig.state.proxyUrl = process.env.IG_PROXY;
-    }
-    // Session Management on production - Dynamo DB
-    if (getENV("IG_STORE_SESSION", "false") === "true" && !isOffline()) {
-      let sessSave = false;
-      // Execute after each requests
-      ig.request.end$.subscribe(async () => {
-        if (!sessSave) {
-          const serialized = await ig.state.serialize();
-          await saveSession(serialized);
-          sessSave = true;
-        }
-      });
-      // Restore session
-      const sess = await loadSession();
-      if (sess) {
-        // the string should be a JSON object
-        await ig.state.deserialize(sess);
-      }
-    }
-    // Simulate pre-login flow
-    if (getENV("IG_PRELOGIN", "false") === "true") {
-      await ig.simulate.preLoginFlow();
-    }
-    // Login
-    user = await ig.account.login(
-      process.env.IG_USERNAME,
-      process.env.IG_PASSWORD
-    );
-    return true;
-  } catch (error) {
-    console.error(
-      "Could not login into Instagram, could try authorizing through helper?"
-    );
-    console.log("cd", error.code);
-    throw error;
+async function postAyreshare(file, caption, cover = null, story = false) {
+  // Check if the file exists
+  if (typeof file === "string" && !existsSync(file)) {
+    throw new Error("File not found");
   }
-}
-
-/**
- * Save session to DynamoDB
- * @param {object} sessData
- * @returns
- */
-async function saveSession(sessData) {
-  let { updateInstagram } = await import("./dynamodb.js");
-  // this deletes the version info, so you'll always use the version provided by the library
-  // delete serialized.constants;
-  // replace constants
-  /*
-  const appversion = getENV("IG_APP_VERSION", "227.0.0.12.117");
-  const appversionCode= getENV("IG_APP_VERSION_CODE", "323703830");
-  sessData.constants = {
-    ...sessData.constants,
-    APP_VERSION: appversion,
-    APP_VERSION_CODE: appversionCode,
+  // Params of Request
+  const params = {
+    post: caption,
+    platforms: ["instagram"],
+    mediaUrls: [
+      // Convert to base64
+      typeof file === "string" ? readFileSync(file).toString("base64") : file,
+    ],
+  };
+  // Add Cover to params
+  if (cover && typeof cover === "string" && !existsSync(cover)) {
+    throw new Error("Cover file not found");
   }
-  */
-  // Save it to DynamoDB
-  return await updateInstagram({
-    session: JSON.stringify(sessData),
-  });
-}
-
-/**
- * Restore session from DynamoDB
- * @returns {object}
- */
-async function loadSession() {
-  let { getInstagram } = await import("./dynamodb.js");
-  const instagram = await getInstagram();
-  if (instagram?.session) {
-    return JSON.parse(instagram.session);
+  if (cover) {
+    params["instagramOptions"]["coverUrl"] =
+      typeof cover === "string"
+        ? readFileSync(cover).toString("base64")
+        : cover;
   }
-  return null;
+  // Add story to params
+  if (story) {
+    params["instagramOptions"]["story"] = true;
+  }
+  // Post Request
+  const post = await ayreShare.post(params);
+  return {
+    id: post.postIds[0].id,
+    code: post.postIds[0].postUrl.match(
+      /https?:\/\/(?:www\.)?instagram\.com\/p\/(\w+)\/?$/
+    )[1],
+  };
 }
 
 /**
@@ -101,24 +65,19 @@ async function loadSession() {
  * @returns {object}
  */
 export async function publishImage(file, caption) {
-  // Login to account first
-  await login();
-  if (typeof file === "string" && !existsSync(file)) {
-    throw new Error("File not found");
-  }
+  // Direct Way
   try {
-    const request = await ig.publish.photo({
-      // read the file into a Buffer
-      file: typeof file === "string" ? readFileSync(file) : file, //Supporting readFile and buffer
-      caption: caption,
-    });
-    return {
-      id: request.media.id,
-      code: request.media.code,
-    };
-  } catch (error) {
-    throw error;
+    return await igPublishImage(file, caption);
+  } catch (err) {
+    // Nothing to do
   }
+  // Ayreshare Way
+  try {
+    return await postAyreshare(file, caption);
+  } catch (err) {
+    // Nothing to do
+  }
+  throw new Error("Image not published");
 }
 
 /**
@@ -129,31 +88,19 @@ export async function publishImage(file, caption) {
  * @returns {object}
  */
 export async function publishVideo(videoFile, videoCover, caption) {
-  // Login to account first
-  await login();
-
-  if (typeof videoFile === "string" && !existsSync(videoFile)) {
-    throw new Error("Video file not found");
-  }
-  if (typeof videoCover === "string" && !existsSync(videoCover)) {
-    throw new Error("Video cover file not found");
-  }
-
+  // Direct Way
   try {
-    const request = await ig.publish.video({
-      // read the file into a Buffer
-      video:
-        typeof videoFile === "string" ? readFileSync(videoFile) : videoFile, //Supporting buffer and readFile
-      coverImage: readFileSync(videoCover),
-      caption: caption,
-    });
-    return {
-      id: request.media.id,
-      code: request.media.code,
-    };
-  } catch (error) {
-    throw error;
+    return await igPublishVideo(videoFile, videoCover, caption);
+  } catch (err) {
+    // Nothing to do
   }
+  // Ayreshare Way
+  try {
+    return await postAyreshare(videoFile, caption, videoCover);
+  } catch (err) {
+    // Nothing to do
+  }
+  throw new Error("Video not published");
 }
 
 /**
@@ -162,18 +109,17 @@ export async function publishVideo(videoFile, videoCover, caption) {
  * @returns {boolean}
  */
 export async function publishStory(file) {
-  // Login to account first
-  await login();
-  if (typeof file === "string" && !existsSync(file)) {
-    throw new Error("File not found");
-  }
+  // Direct Way
   try {
-    const request = await ig.publish.story({
-      // read the file into a Buffer
-      file: typeof file === "string" ? readFileSync(file) : file, //Supporting readFile and buffer
-    });
-    return true;
-  } catch (error) {
-    throw error;
+    return await igPublishStory(file);
+  } catch (err) {
+    // Nothing to do
   }
+  // Ayreshare Way
+  try {
+    return await postAyreshare(file, "", null, true);
+  } catch (err) {
+    // Nothing to do
+  }
+  throw new Error("Story not published");
 }
