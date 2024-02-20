@@ -15,7 +15,7 @@ const SI_PREFIXES = [
  * @returns {string}
  */
 
-const abbreviateNumber = (number, decimal = 1, long = false) => {
+export const abbreviateNumber = (number, decimal = 1, long = false) => {
   if (number === 0) return number;
 
   const tier = SI_PREFIXES.filter((n) => number >= n.value).pop();
@@ -29,7 +29,7 @@ const abbreviateNumber = (number, decimal = 1, long = false) => {
  * @param {number} amount 
  * @returns {string}
  */
-function numFormat(amount) {
+export function numFormat(amount) {
   let decimal = 0;
   if (amount < 10) {
     decimal = 1;
@@ -51,8 +51,3 @@ function numFormat(amount) {
   }
   return amount.toLocaleString("en-US", { minimumFractionDigits: decimal });
 }
-
-module.exports = {
-  abbreviateNumber,
-  numFormat
-};

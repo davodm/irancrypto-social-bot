@@ -1,9 +1,10 @@
-const { getRecap } = require("./src/api");
-const { abbreviateNumber, numFormat } = require("./src/number");
-const { updateLastRunTime } = require("./src/dynamodb");
-const { createImageFromTemplate, getRandomTheme } = require("./src/html");
-const { getENV } = require("./src/env");
-const TelegramBot = require("node-telegram-bot-api");
+import { abbreviateNumber, numFormat } from "./src/number.js";
+import { getRecap } from "./src/api.js";
+import { updateLastRunTime } from "./src/dynamodb.js";
+import { createImageFromTemplate, getRandomTheme } from "./src/html.js";
+import { getENV } from "./src/env.js";
+import TelegramBot from "node-telegram-bot-api";
+
 const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
 /**
@@ -11,7 +12,7 @@ const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
  * @param {*} event 
  * @param {*} context 
  */
-exports.coinrecap = async function (event, context) {
+export const coinrecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
   try {

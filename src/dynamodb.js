@@ -4,12 +4,12 @@
  * Getting last run time and check what type of tweet was it
  */
 
-const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
-const {
+import  { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
   PutCommand,
   DynamoDBDocumentClient,
   GetCommand,
-} = require("@aws-sdk/lib-dynamodb");
+} from "@aws-sdk/lib-dynamodb";
 
 //Define DynamoDB client
 const client = new DynamoDBClient({
@@ -22,7 +22,7 @@ const docClient = DynamoDBDocumentClient.from(client);
  * @param {string} $type type of action
  * @returns {object}
  */
-async function getLastRunTime($type) {
+export async function getLastRunTime($type) {
   //Send Request
   try {
     const result = await docClient.send(
@@ -45,7 +45,7 @@ async function getLastRunTime($type) {
  * @param {string} $type type of action
  * @param {object} $data data object to save
  */
-async function updateLastRunTime($type,$data={}) {
+export async function updateLastRunTime($type,$data={}) {
   //Send Request
   try {
     return await docClient.send(
@@ -68,7 +68,7 @@ async function updateLastRunTime($type,$data={}) {
  * Fetch twitter data from DynamoDB
  * @returns {object}
  */
-async function getTwitter() {
+export async function getTwitter() {
   //Send Requests
   try {
     const result = await docClient.send(
@@ -91,7 +91,7 @@ async function getTwitter() {
  * @param {object} $data 
  * @returns 
  */
-async function updateTwitter($data) {
+export async function updateTwitter($data) {
   //Send Request
   try {
     return await docClient.send(
@@ -115,7 +115,7 @@ async function updateTwitter($data) {
  * Fetch Instagram data from DynamoDB
  * @returns {object}
  */
-async function getInstagram() {
+export async function getInstagram() {
   //Send Requests
   try {
     const result = await docClient.send(
@@ -138,7 +138,7 @@ async function getInstagram() {
  * @param {object} $data 
  * @returns 
  */
-async function updateInstagram($data) {
+export async function updateInstagram($data) {
   //Send Request
   try {
     return await docClient.send(
@@ -156,12 +156,3 @@ async function updateInstagram($data) {
     throw error; // Rethrow the error to be handled by the caller
   }
 }
-
-module.exports = {
-  getLastRunTime,
-  updateLastRunTime,
-  getTwitter,
-  updateTwitter,
-  getInstagram,
-  updateInstagram,
-};

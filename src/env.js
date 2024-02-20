@@ -17,14 +17,14 @@ if (process?.env?.NODE_ENV) {
   NODE_ENV = "production";
 }
 //ENVIRONMENT
-const $ENV = NODE_ENV;
+export const $ENV = NODE_ENV;
 
 /**
  * Check whether env is equal to our desired or not
  * @param {String} $type
  * @returns {Boolean}
  */
-function isENV($type) {
+export function isENV($type) {
   return $type.toLowerCase() === $ENV;
 }
 
@@ -34,7 +34,7 @@ function isENV($type) {
  * @param {*} default_value
  * @returns {String}
  */
-function getENV(key, default_value = undefined) {
+export function getENV(key, default_value = undefined) {
   if (
     (!process.env.hasOwnProperty(key) || !process.env[key]) &&
     default_value === undefined
@@ -50,7 +50,7 @@ function getENV(key, default_value = undefined) {
  * @param {String} value
  * @returns
  */
-function checkENV(key, value) {
+export function checkENV(key, value) {
   try {
     const c = getENV(key);
     return c && c.toLowerCase() === value.toLowerCase();
@@ -64,7 +64,7 @@ function checkENV(key, value) {
  * @param {string} key
  * @returns {object}
  */
-function getArrayENV(key) {
+export function getArrayENV(key) {
   if (!process.env.hasOwnProperty(key) || !process.env[key]) {
     throw new Error(`Environment variable ${key} not found`);
   }
@@ -75,7 +75,7 @@ function getArrayENV(key) {
  * Check that is the app running on cloud or not
  * @returns {boolean}
  */
-function isOffline() {
+export function isOffline() {
   //Serverless-offline plugin
   if (process?.env?.IS_OFFLINE) {
     return true;
@@ -88,13 +88,4 @@ function isOffline() {
     return true;
   }
   return false;
-}
-
-module.exports={
-  isENV,
-  getENV,
-  checkENV,
-  getArrayENV,
-  isOffline,
-  $ENV //Current env
 }

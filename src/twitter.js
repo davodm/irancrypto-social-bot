@@ -3,10 +3,10 @@
  * Could get improved by TwitterApiRateLimitPlugin
  * Using "twitter-api-v2": 1.15.1
  */
-const { TwitterApi } = require("twitter-api-v2");
-const { readFileSync } = require("fs");
-const fetch = require("node-fetch");
-const { isOffline, isENV } = require("./env");
+import { TwitterApi} from "twitter-api-v2";
+import { readFileSync } from "fs";
+import fetch from "node-fetch";
+import { isOffline, isENV } from "./env.js";
 let client;
 
 async function init() {
@@ -83,7 +83,7 @@ async function init() {
  * @param {string[]} $mediaFiles
  * @returns
  */
-async function tweet($text, $mediaFiles = []) {
+export async function tweet($text, $mediaFiles = []) {
   //Init client to use access token or refresh it
   if (!client) {
     client = await init();
@@ -100,7 +100,7 @@ async function tweet($text, $mediaFiles = []) {
   return await client.v2.tweet(opts);
 }
 
-async function reply($tweetID, $text, $mediaFiles = []) {
+export async function reply($tweetID, $text, $mediaFiles = []) {
   //Init client to use access token or refresh it
   if (!client) {
     client = await init();
@@ -168,8 +168,3 @@ async function download($url) {
  * @returns {boolean}
  */
 const isValidUrl = (str) => /^https?:\/\//.test(str);
-
-module.exports = {
-  tweet,
-  reply,
-};

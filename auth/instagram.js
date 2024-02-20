@@ -1,7 +1,6 @@
-require("dotenv").config();
-const inquirer = require('inquirer');
-const bluebird = require("bluebird");
-const { IgApiClient,IgCheckpointError } = require("instagram-private-api");
+import inquirer from "inquirer";
+import Bluebird from "bluebird";
+import { IgApiClient,IgCheckpointError } from "instagram-private-api";
 
 const ig = new IgApiClient();
 
@@ -16,7 +15,7 @@ async function login() {
     ig.state.proxyUrl = process.env.IG_PROXY;
   }
   //Start Logging in via bluebird to catch the checkpoint
-  bluebird
+  Bluebird
     .try(async () => {
       // Simulate pre-login flow
       await ig.simulate.preLoginFlow();

@@ -1,11 +1,15 @@
-const fs = require("fs");
-const path = require("path");
-const Handlebars = require("handlebars");
-const { getENV, isOffline } = require("./env");
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from 'url';
+import Handlebars from "handlebars";
+import { getENV, isOffline } from "./env.js";
 // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
 // https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
-const puppeteerCore = require("puppeteer-core");
+import puppeteerCore from "puppeteer-core";
 let chromium;
+// __dirname is not defined in ES6 modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Generate an image from an HTML + Parsing via Handlebars
@@ -14,7 +18,7 @@ let chromium;
  * @param {string} outputFileName
  * @returns {string} The path to the generated image
  */
-async function createImageFromTemplate(templateName, data, outputFileName) {
+export async function createImageFromTemplate(templateName, data, outputFileName) {
   try {
     // Render Template to HTML
     const template = await renderTemplate(templateName, data, true);
@@ -81,7 +85,14 @@ async function createImageFromTemplate(templateName, data, outputFileName) {
   }
 }
 
-async function renderTemplate(
+/**
+ * Load a HTML template and render it with handlebars and convert images to base64
+ * @param {string} templateName 
+ * @param {object} data 
+ * @param {boolean} convertImageToBase64 
+ * @returns {Promise<string>}
+ */
+export async function renderTemplate(
   templateName,
   data,
   convertImageToBase64 = false
@@ -170,14 +181,8 @@ String.prototype.replaceAsync = async function (regex, asyncFn) {
  * Decide whether to use a dark or light theme
  * @returns {string} "dark"/"light"/"black"
  */
-function getRandomTheme() {
+export function getRandomTheme() {
   const themes = ["black", "light", "dark"];
   const randomIndex = Math.floor(Math.random() * themes.length);
   return themes[randomIndex];
 }
-
-module.exports = {
-  createImageFromTemplate,
-  renderTemplate,
-  getRandomTheme,
-};

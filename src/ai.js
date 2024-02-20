@@ -1,4 +1,4 @@
-const { OpenAI } = require("openai");
+import { OpenAI } from "openai";
 const openai = new OpenAI({
   organization: process.env.OPENAI_ORGANIZATION,
   apiKey: process.env.OPENAI_API_KEY,
@@ -7,10 +7,10 @@ const openai = new OpenAI({
 
 /**
  * Ask a question from Chat-GPT
- * @param {string[]} $messages 
+ * @param {string[]} $messages
  * @returns {string[]}
  */
-async function ask($messages) {
+export async function ask($messages) {
   let result;
   //Newer Moodels usechat/completions
   if (process.env.OPENAI_MODEL.includes("gpt")) {
@@ -20,7 +20,8 @@ async function ask($messages) {
       max_tokens: process.env.OPENAI_MODEL.includes("gpt-4") ? 5000 : 3000, //The maximum number of tokens to generate in the completion.
       temperature: 0.4, //What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random
     });
-  }else{//Older models like text-davinci-003 and etc - not recommended at all because of finishing the length of text
+  } else {
+    //Older models like text-davinci-003 and etc - not recommended at all because of finishing the length of text
     result = await openai.completions.create({
       model: process.env.OPENAI_MODEL,
       prompt: $messages.map((m) => m.content).join("\n"),
@@ -35,15 +36,14 @@ async function ask($messages) {
 
 /**
  * Write tweet templates
- * @param {string} $subject 
+ * @param {string} $subject
  * @returns {string}
  */
-async function writeTweet($subject) {
+export async function writeTweet($subject) {
   const messages = [
     {
       role: "system",
-      content:
-        `Act as a Content Marketing Specialist.
+      content: `Act as a Content Marketing Specialist.
         Create a tweet template with unique incremental numbers between %1% and %n% for placeholders, where %n% represents the total number of variables used in the specific user prompt. Ensure that each generated tweet is concise (less than 200 characters) but may extend up to 220 characters if needed to convey the information effectively.`,
     },
     { role: "user", content: $subject },
@@ -62,15 +62,14 @@ async function writeTweet($subject) {
 
 /**
  * Generate dynamic captions for Instagram
- * @param {string} $subject 
+ * @param {string} $subject
  * @returns {string}
  */
-async function writeCaption($subject){
+export async function writeCaption($subject) {
   const messages = [
     {
       role: "system",
-      content:
-        `Act as a Content Marketing Specialist.
+      content: `Act as a Content Marketing Specialist.
         Create a rich caption with related hashtags (maximum 3) for instagram based on the subjects that are going to be provided by user.`,
     },
     { role: "user", content: $subject },
@@ -86,9 +85,3 @@ async function writeCaption($subject){
     return null;
   }
 }
-
-module.exports = {
-  ask,
-  writeTweet,
-  writeCaption
-};

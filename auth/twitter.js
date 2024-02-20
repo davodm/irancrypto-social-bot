@@ -1,9 +1,8 @@
 /**
  * This part is CLI - local based to fetch twitter access token
  */
-require("dotenv").config();//Since it's on local run
-const prompt = require('prompt');
-const { TwitterApi } = require("twitter-api-v2");
+import prompt from "prompt";
+import { TwitterApi } from "twitter-api-v2";
 const client = new TwitterApi({
   clientId: process.env.TWITTER_CLIENT_ID,
   clientSecret: process.env.TWITTER_CLIENT_SECRET,

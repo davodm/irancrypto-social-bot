@@ -1,10 +1,10 @@
-const { getPopular } = require("./src/api");
-const { tweet } = require("./src/twitter");
-const { writeTweet } = require("./src/ai");
-const { getLastRunTime, updateLastRunTime } = require("./src/dynamodb");
-const { abbreviateNumber } = require("./src/number");
+import { getPopular } from "./src/api.js";
+import { tweet } from "./src/twitter.js";
+import { writeTweet } from "./src/ai.js";
+import { getLastRunTime, updateLastRunTime } from "./src/dynamodb.js";
+import { abbreviateNumber } from "./src/number.js";
 
-exports.handler = async function (event) {
+export const handler = async function (event) {
   //Get Data from API
   try {
     const popularItems = await getPopular();

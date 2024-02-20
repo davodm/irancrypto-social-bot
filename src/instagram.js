@@ -2,10 +2,9 @@
  * Instagran helper to publish the content
  * using: "instagram-private-api": 1.45.3
  */
-
-const { IgApiClient } = require("instagram-private-api");
-const { readFileSync, existsSync } = require("fs");
-const { isOffline, getENV } = require("./env");
+import { IgApiClient } from "instagram-private-api";
+import { readFileSync, existsSync } from "fs";
+import { isOffline, getENV } from "./env.js";
 const ig = new IgApiClient();
 let user;
 
@@ -101,7 +100,7 @@ async function loadSession() {
  * @param {string} caption
  * @returns {object}
  */
-async function publishImage(file, caption) {
+export async function publishImage(file, caption) {
   // Login to account first
   await login();
   if (typeof file === "string" && !existsSync(file)) {
@@ -129,7 +128,7 @@ async function publishImage(file, caption) {
  * @param {string} caption
  * @returns {object}
  */
-async function publishVideo(videoFile, videoCover, caption) {
+export async function publishVideo(videoFile, videoCover, caption) {
   // Login to account first
   await login();
 
@@ -162,7 +161,7 @@ async function publishVideo(videoFile, videoCover, caption) {
  * @param {*} file
  * @returns {boolean}
  */
-async function publishStory(file) {
+export async function publishStory(file) {
   // Login to account first
   await login();
   if (typeof file === "string" && !existsSync(file)) {
@@ -178,9 +177,3 @@ async function publishStory(file) {
     throw error;
   }
 }
-
-module.exports = {
-  publishImage,
-  publishVideo,
-  publishStory,
-};

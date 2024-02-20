@@ -1,9 +1,9 @@
-const { getRecap } = require("./src/api");
-const { abbreviateNumber, numFormat } = require("./src/number");
-const { publishImage } = require("./src/instagram");
-const { writeCaption } = require("./src/ai");
-const { updateLastRunTime } = require("./src/dynamodb");
-const { createImageFromTemplate, getRandomTheme } = require("./src/html");
+import { getRecap } from "./src/ap.js";
+import { abbreviateNumber, numFormat } from "./src/number.js";
+import { publishImage } from "./src/instagram.js";
+import { writeCaption } from "./src/ai.js";
+import { updateLastRunTime } from "./src/dynamodb.js";
+import { createImageFromTemplate, getRandomTheme } from "./src/html.js";
 
 /**
  * Weekly recap of the most traded tokens on the Iran's cryptocurrency market to publish on Instagram
@@ -11,7 +11,7 @@ const { createImageFromTemplate, getRandomTheme } = require("./src/html");
  * @param {*} event 
  * @param {*} context 
  */
-exports.coinrecap = async function (event, context) {
+export const coinrecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
   try {
@@ -31,7 +31,7 @@ exports.coinrecap = async function (event, context) {
  * @param {*} event 
  * @param {*} context 
  */
-exports.exchangerecap = async function (event, context) {
+export const exchangerecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
   context.callbackWaitsForEmptyEventLoop = false;
   try {

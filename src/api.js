@@ -34,7 +34,7 @@ async function request($method, $params = {}) {
  * Popular Cryptos in Iran by 24h volume
  * @returns {object[]}
  */
-async function getPopular() {
+export async function getPopular() {
   return await request("popular");
 }
 
@@ -42,7 +42,7 @@ async function getPopular() {
  * Exchanges transactions volume in Iran by 24h volume
  * @returns {object[]}
  */
-async function getExchanges() {
+export async function getExchanges() {
   return await request("exchanges");
 }
 
@@ -52,12 +52,6 @@ async function getExchanges() {
  * @param {string} interval weekly/monthly
  * @returns {object[]}
  */
-async function getRecap(type,interval) {
+export async function getRecap(type,interval) {
   return await request("recap", { type,interval, limit: 50 });
 }
-
-module.exports = {
-  getExchanges,
-  getPopular,
-  getRecap
-};
