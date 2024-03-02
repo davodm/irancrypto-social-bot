@@ -1,4 +1,4 @@
-import { getRecap } from "./src/ap.js";
+import { getRecap } from "./src/api.js";
 import { abbreviateNumber, numFormat } from "./src/number.js";
 import { publishImage } from "./src/instagram.js";
 import { writeCaption } from "./src/ai.js";
