@@ -10,6 +10,7 @@ The IranCrypto Market Social Media Bot is a powerful project that leverages Node
 * **Instagram Posting:** Shares the generated images as both posts and stories on Instagram, utilizing the [Instagram private API](https://www.npmjs.com/package/instagram-private-api).
 * **Telegram Posting:** Shares the generated images on Telegram channel, utilizing the [Node.JS Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
 * **Serverless Execution:** Runs daily via AWS Lambda on a cron schedule, ensuring maintenance-free execution and scalability.
+* **AyreShare API:** In case of Instagram blockage, the project uses the [AyreShare API](https://www.ayrshare.com/) to bypass the checkpoint, you can set the API key on .env file to use it optionally.
 
 ## Setup & Usage
 Twitter access token it's not a straight forward way, But for the rest of the modules, you just need to use the credientials on .env file.
@@ -44,6 +45,8 @@ TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
 TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
 
 CHROMIUM=<Your chromium path if you want to set it manually without AWS layers>
+
+AYRESHARE_API_KEY=<Your Ayreshre API Key - optionally>
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
