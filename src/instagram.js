@@ -10,7 +10,8 @@ import {
 import SocialPost from "social-post-api";
 import { getENV } from "./env.js";
 
-const ayreShare = new SocialPost(getENV("AYRESHARE_API_KEY"));
+const shouldUseAyreshare = getENV("AYRESHARE_API_KEY", "") !== "";
+const ayreShare = new SocialPost(getENV("AYRESHARE_API_KEY", ""));
 
 /**
  * Publish post through Ayreshare
@@ -72,10 +73,12 @@ export async function publishImage(file, caption) {
     // Nothing to do
   }
   // Ayreshare Way
-  try {
-    return await postAyreshare(file, caption);
-  } catch (err) {
-    // Nothing to do
+  if (shouldUseAyreshare) {
+    try {
+      return await postAyreshare(file, caption);
+    } catch (err) {
+      // Nothing to do
+    }
   }
   throw new Error("Image not published");
 }
@@ -95,10 +98,12 @@ export async function publishVideo(videoFile, videoCover, caption) {
     // Nothing to do
   }
   // Ayreshare Way
-  try {
-    return await postAyreshare(videoFile, caption, videoCover);
-  } catch (err) {
-    // Nothing to do
+  if (shouldUseAyreshare) {
+    try {
+      return await postAyreshare(videoFile, caption, videoCover);
+    } catch (err) {
+      // Nothing to do
+    }
   }
   throw new Error("Video not published");
 }
@@ -116,10 +121,12 @@ export async function publishStory(file) {
     // Nothing to do
   }
   // Ayreshare Way
-  try {
-    return await postAyreshare(file, "", null, true);
-  } catch (err) {
-    // Nothing to do
+  if (shouldUseAyreshare) {
+    try {
+      return await postAyreshare(file, "", null, true);
+    } catch (err) {
+      // Nothing to do
+    }
   }
   throw new Error("Story not published");
 }
