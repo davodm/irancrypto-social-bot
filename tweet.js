@@ -110,16 +110,13 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
  */
 function lineBreak(inputText) {
   // Find the hashtags
-  const hashtags = inputText.match(/#\w+/g) || [];
-  // Find the second last hashtag
-  const secondLastHashtag =
-    hashtags.length > 1 ? hashtags.slice(-2, -1)[0] : null;
-  // If there is no second last hashtag, return the input text
-  if (!secondLastHashtag) {
+  const hashtags = findHashtags(inputText);
+  // If there is no second last hashtag or no hashtags at all
+  if (hashtags.count == 0 || hashtags.atEnd.length == 0) {
     return inputText;
   }
-  // Find the index of the second last hashtag
-  let hashtagIndex = inputText.indexOf(secondLastHashtag);
+  // Find the index of the first last hashtag
+  let hashtagIndex = inputText.indexOf(hashtags.atEnd[0]);
   // If there is no index of the second last hashtag, return the input text
   if (hashtagIndex === -1) {
     return inputText;
@@ -134,4 +131,31 @@ function lineBreak(inputText) {
     "\n\n" +
     formattedText.slice(hashtagIndex);
   return formattedText;
+}
+
+/**
+ * Find hashtags in the content
+ * @param {string} content 
+ * @returns {object}
+ */
+function findHashtags(content) {
+  const hashtags = content.match(/#\w+/g) || [];
+  const lastLineStartIndex = content.lastIndexOf("\n") + 1;
+  const hashtagsInText = [];
+  const hashtagsAtEnd = [];
+
+  for (const hashtag of hashtags) {
+    const hashtagIndex = content.indexOf(hashtag);
+    if (hashtagIndex >= lastLineStartIndex) {
+      hashtagsAtEnd.push(hashtag);
+    } else {
+      hashtagsInText.push(hashtag);
+    }
+  }
+
+  return {
+    count: hashtags.length,
+    inText: hashtagsInText,
+    atEnd: hashtagsAtEnd,
+  };
 }
