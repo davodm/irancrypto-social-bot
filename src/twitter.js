@@ -10,16 +10,16 @@ import { isOffline, isENV } from "./env.js";
 let client;
 
 async function init() {
-  // Import Dynamo DB on serverless
-  if (!isOffline()) {
-    ({ getTwitter, updateTwitter } = await import("./dynamodb.js"));
-  } else {
+  // Offline Mode
+  if (isOffline()) {
     // Return client with env tokens
     return new TwitterApi(process.env.TWITTER_ACCESS_TOKEN);
   }
+  // Import Dynamo DB on serverless
+  let { getTwitter, updateTwitter } = await import("./dynamodb.js");
   let $act = "refresh";
   //Get From Dynamo
-  $data = await getTwitter();
+  const $data = await getTwitter();
   //First time init from env
   if ($data === false) {
     $act = "first";
@@ -56,9 +56,10 @@ async function init() {
         expiresIn: req.expiresIn,
       });
       if (isENV("development")) {
+        const me=await req.client.v2.me();
         console.log(
           "refreshed twitter user name:",
-          await req.client.v2.me()?.data?.name
+          me?.data?.name
         );
       }
       return req.client;
@@ -77,11 +78,12 @@ async function init() {
     throw error;
   }
 }
+
 /**
  * Write a tweet
  * @param {string} $text
  * @param {string[]} $mediaFiles
- * @returns
+ * @returns {Promise<object>}
  */
 export async function tweet($text, $mediaFiles = []) {
   //Init client to use access token or refresh it
@@ -142,7 +144,7 @@ async function prepareMediaFiles($mediaFiles) {
 /**
  * Upload file content buffer to twitter media
  * @param {*} $fileContent
- * @returns
+ * @returns {Promise<string>}
  */
 async function uploadMedia($fileContent) {
   const { fileTypeFromBuffer } = await import("file-type");
@@ -155,7 +157,7 @@ async function uploadMedia($fileContent) {
 /**
  * Download url media file and return the buffer
  * @param {string} $url
- * @returns
+ * @returns {Promise<Buffer>}
  */
 async function download($url) {
   const response = await fetch($url);
