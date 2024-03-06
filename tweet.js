@@ -23,7 +23,7 @@ export const handler = async function (event) {
     };
 
     //Last run check
-    const lastRun = await getLastRunTime('tweet');
+    const lastRun = await getLastRunTime("tweet");
     if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
       throw new Error("Last run is less than one hour!");
     }
@@ -50,7 +50,7 @@ export const handler = async function (event) {
     }
 
     //Update last run time to know what was the last tweet
-    await updateLastRunTime('tweet',{actionSubject: lastKey});
+    await updateLastRunTime("tweet", { actionSubject: lastKey });
 
     //Out
     console.log("Tweet sent successfully!", post);
@@ -109,16 +109,29 @@ function buildTweet($type, $content, $popularItems, $totalVolIRR) {
  * @returns {string}
  */
 function lineBreak(inputText) {
-  // Find the index of the first hashtag
-  const firstHashtagIndex = inputText.indexOf("#");
-
+  // Find the hashtags
+  const hashtags = inputText.match(/#\w+/g) || [];
+  // Find the second last hashtag
+  const secondLastHashtag =
+    hashtags.length > 1 ? hashtags.slice(-2, -1)[0] : null;
+  // If there is no second last hashtag, return the input text
+  if (!secondLastHashtag) {
+    return inputText;
+  }
+  // Find the index of the second last hashtag
+  let hashtagIndex = inputText.indexOf(secondLastHashtag);
+  // If there is no index of the second last hashtag, return the input text
+  if (hashtagIndex === -1) {
+    return inputText;
+  }
   // Insert a line break before the first hashtag
   let formattedText = inputText;
-  if (firstHashtagIndex !== -1) {
-    formattedText =
-      formattedText.slice(0, firstHashtagIndex) +
-      "\n\n" +
-      formattedText.slice(firstHashtagIndex);
-  }
+  formattedText =
+    formattedText.slice(
+      0,
+      inputText[hashtagIndex - 1] === " " ? hashtagIndex - 1 : hashtagIndex
+    ) + // If there is a space before the hashtag, remove it
+    "\n\n" +
+    formattedText.slice(hashtagIndex);
   return formattedText;
 }
