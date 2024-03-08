@@ -5,34 +5,35 @@ import { getLastRunTime, updateLastRunTime } from "./src/dynamodb.js";
 import { abbreviateNumber } from "./src/number.js";
 
 export const handler = async function (event) {
-  //Get Data from API
+  // Get Data from API
   try {
     const popularItems = await getPopular();
-    //Calculate total Vol
+    // Calculate total Vol
     let totalVolIRR = 0;
     popularItems.forEach((item) => {
       totalVolIRR += item.irr.volume;
       item.irrfvol = abbreviateNumber(item.irr.volume, 1, false); //Formatted version
     });
 
-    //Tweets subject
+    // Tweets subject
     const tweets = {
       trends:
         "Write about the top 3 crypto trends in the past 24 hours in Iran. Include only the name and volume in IRR currency. Please format each trend on a new line for clarity.",
       vol: "Write about the total volume of crypto transactions in Iran in the past 24 hours, all in IRR currency",
     };
 
-    //Last run check
+    // Last run check
     const lastRun = await getLastRunTime("tweet");
-    if (Date.now() - (lastRun.timestamp ?? 0) < 3600 * 1000) {
+    // Checking to can't be run less than one hour (58 mins)
+    if (Date.now() - (lastRun.timestamp ?? 0) < 3480 * 1000) {
       throw new Error("Last run is less than one hour!");
     }
 
-    //Remove runned one
+    // Remove runned one
     delete tweets[lastRun.actionSubject];
     let post;
     let lastKey;
-    //Pick one and tweet from the list
+    // Pick one and tweet from the list
     for await (const [key, value] of Object.entries(tweets)) {
       post = buildTweet(
         key,
@@ -44,15 +45,15 @@ export const handler = async function (event) {
       break;
     }
 
-    //Send tweet
+    // Send tweet
     if (post) {
       await tweet(post);
     }
 
-    //Update last run time to know what was the last tweet
+    // Update last run time to know what was the last tweet
     await updateLastRunTime("tweet", { actionSubject: lastKey });
 
-    //Out
+    // Out
     console.log("Tweet sent successfully!", post);
   } catch (err) {
     console.error(err);
