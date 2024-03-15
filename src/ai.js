@@ -51,7 +51,12 @@ export async function writeTweet($subject) {
   try {
     const result = await ask(messages);
     if (result.length > 0) {
-      return result[0].message.content;
+      let $content=result[0].message.content;
+      // Remove double quotes from the beginning and end of the string if they exist
+      if ($content && $content.startsWith('"') && $content.endsWith('"')) {
+        $content = $content.slice(1, -1);
+      }
+      return $content;
     }
     return null;
   } catch (err) {
@@ -77,7 +82,12 @@ export async function writeCaption($subject) {
   try {
     const result = await ask(messages);
     if (result.length > 0) {
-      return result[0].message.content;
+      let $content=result[0].message.content;
+      // Remove double quotes from the beginning and end of the string if they exist
+      if ($content && $content.startsWith('"') && $content.endsWith('"')) {
+        $content = $content.slice(1, -1);
+      }
+      return $content;
     }
     return null;
   } catch (err) {
