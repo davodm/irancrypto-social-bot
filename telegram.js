@@ -9,8 +9,8 @@ const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
 /**
  * Daily recap of the most traded tokens on the Iran's cryptocurrency market to publish on Telegram
- * @param {*} event 
- * @param {*} context 
+ * @param {*} event
+ * @param {*} context
  */
 export const coinrecap = async function (event, context) {
   // Prevent timeout from waiting event loop - Chromium
@@ -33,7 +33,7 @@ export const coinrecap = async function (event, context) {
 async function dailyCoinsRecap() {
   try {
     // Get Data from API
-    const data = await getRecap("coin","daily");
+    const data = await getRecap("coin", "daily");
     // USDT Token
     // const usd= data.find((item) => item.has_iran && item.symbol === 'USDT');
     // Total Trade Volume
@@ -80,8 +80,8 @@ async function dailyCoinsRecap() {
 
 📊 Total Traded Volume Today: ${numFormat(Math.round(totalVol))} IRR
 
-Source: @irancrypto_market
-Follow us on <a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a>
+🖥 Check the website for more details: <a href="https://irancrypto.market/popular/">irancrypto.market</a>
+🛎 Follow us on <a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a> | <a href="https://twitter.com/ircryptomarket">Twitter @ircryptomarket</a> | <a href="https://t.me/irancrypto_market">Telegram @irancrypto_market</a>
 `;
 
     // Publish the image on Telegram channel
