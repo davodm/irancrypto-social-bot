@@ -137,7 +137,11 @@ function lineBreak(inputText) {
  */
 function findHashtags(content) {
   const hashtags = content.match(/#\w+/g) || [];
-  const lastLineStartIndex = content.lastIndexOf("\n") + 1;
+  let lastLineStartIndex = content.lastIndexOf("\n") + 1;
+  // If there's no newline, use the splitIndex based on content length
+  if (lastLineStartIndex === 0) {
+    lastLineStartIndex = Math.floor(content.length * 0.75); // Adjust the 0.75 as needed
+  }
   const hashtagsInText = [];
   const hashtagsAtEnd = [];
 
