@@ -3,7 +3,7 @@
 The IranCrypto Market Social Media Bot is a powerful project that leverages Node.js and AWS Lambda to automate the generation of daily/weekly crypto market updates on social media platforms, including Twitter, Telegram and Instagram. It utilizes the IranCrypto API to fetch data on the most popular cryptocurrencies and then generates insightful content, complete with engaging English-language tweets and Instagram posts.
 
 ### Features
-* **Crypto Market Data:** Fetches daily and weekly rankings of top cryptocurrencies from the IranCryptoMarket API.
+* **Crypto Market Data:** Fetches daily and weekly rankings of top cryptocurrencies from the [IranCryptoMarket API](https://irancrypto.market/api/).
 * **Engaging Content Generation:** Uses ChatGPT to create compelling English-language tweets that discuss the performance, volume, and price changes of the top cryptocurrencies.
 * **Instagram Image Creation:** Generates images for Instagram posts using [Node HTML to image](https://www.npmjs.com/package/node-html-to-image), based on templates created for the project.
 * **Twitter Integration:** Posts generated content on Twitter using the [Twitter API V2](https://www.npmjs.com/package/twitter-api-v2), with credentials obtained using a CLI tool.
