@@ -90,6 +90,9 @@ async function dailyCoinsRecap() {
       caption: caption,
       parse_mode: "html",
       disable_web_page_preview: true,
+    },{
+      filename: `daily-coins-${new Date().toISOString().slice(0, 10)}.jpg`,
+      contentType: "image/jpeg",
     });
   } catch (err) {
     throw err;

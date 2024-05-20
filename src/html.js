@@ -5,6 +5,7 @@ import Handlebars from "handlebars";
 import { getENV, isOffline } from "./env.js";
 // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
 // https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer
+// Puppeteer-core should be matched with the version of Chromium: https://pptr.dev/supported-browsers
 import puppeteerCore from "puppeteer-core";
 let chromium;
 // __dirname is not defined in ES6 modules
