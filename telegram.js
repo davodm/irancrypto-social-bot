@@ -81,6 +81,7 @@ async function dailyCoinsRecap() {
 📊 Total Traded Volume Today: ${numFormat(Math.round(totalVol))} IRR
 
 🖥 Check the website for more details: <a href="https://irancrypto.market/popular/">irancrypto.market</a>
+
 🛎 Follow us on <a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a> | <a href="https://twitter.com/ircryptomarket">Twitter @ircryptomarket</a> | <a href="https://t.me/irancrypto_market">Telegram @irancrypto_market</a>
 `;
 

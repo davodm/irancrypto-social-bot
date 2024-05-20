@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 import Handlebars from "handlebars";
 import { getENV, isOffline } from "./env.js";
 // Load puppeteer-core and chromium on AWS Lambda by which chromium is loaded by layer
@@ -16,14 +16,28 @@ const __dirname = path.dirname(__filename);
  * @param {string} templateName
  * @param {object} data
  * @param {string} outputFileName
- * @returns {string} The path to the generated image
+ * @returns {Promise<string>} The path to the generated image
  */
-export async function createImageFromTemplate(templateName, data, outputFileName) {
+export async function createImageFromTemplate(
+  templateName,
+  data,
+  outputFileName
+) {
+  // Initialize browser
+  let browser = null;
   try {
     // Render Template to HTML
     const template = await renderTemplate(templateName, data, true);
-    // Open Browser
-    let browser;
+    const optArgs=[
+      '--no-zygote',
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-setuid-sandbox',
+      '--disable-web-security',
+      '--force-color-profile=srgb',
+      '--hide-scrollbars',
+    ];
+
     // Load Chromium on AWS Lambda
     if (!getENV("CHROMIUM", null)) {
       // Get Chromium data on AWS Lambda layer
@@ -32,33 +46,22 @@ export async function createImageFromTemplate(templateName, data, outputFileName
       browser = await puppeteerCore.launch({
         executablePath: await chromium.executablePath(),
         headless: chromium.headless,
-        args: [
-          ...chromium.args,
-          "--force-color-profile=srgb",
-          "--hide-scrollbars",
-          "--disable-web-security",
-          "--no-sandbox",
-        ],
+        args: chromium.args.concat(optArgs),
       });
       // Define Chromium path manually via .env
     } else {
       browser = await puppeteerCore.launch({
         executablePath: getENV("CHROMIUM", null),
-        args: [
-          "--force-color-profile=srgb",
-          "--disable-web-security",
-          "--no-sandbox",
-        ],
+        args: optArgs,
       });
     }
     const page = await browser.newPage();
     // Set viewport to increase quality
     await page.setViewport({ width: 1024, height: 1024, deviceScaleFactor: 3 });
-    // await page.setUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36");
     // Set HTML Content
     await page.setContent(template);
     // Wait for any asynchronous operations to complete
-    //await page.waitForTimeout(1000);
+    // await page.waitForTimeout(1000);
     // Take a screenshot of the entire page
     const element = await page.$("body");
     // Output filedir on Lambda /tmp/
@@ -69,27 +72,27 @@ export async function createImageFromTemplate(templateName, data, outputFileName
     }
     // Take Screenshot and save it to file
     await element.screenshot({
+      type: "jpeg",
+      quality: 100,
       omitBackground: true,
       path: $outputPath + outputFileName, // Write on the disk
     });
-    // Close the browser
-    //await page.close();
-    const pages = await browser.pages();
-    for (let i = 0; i < pages.length; i++) {
-      await pages[i].close();
-    }
-    await browser.close();
     return $outputPath + outputFileName;
   } catch (error) {
+    console.error(`Error generating image`, error);
     throw error;
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
   }
 }
 
 /**
  * Load a HTML template and render it with handlebars and convert images to base64
- * @param {string} templateName 
- * @param {object} data 
- * @param {boolean} convertImageToBase64 
+ * @param {string} templateName
+ * @param {object} data
+ * @param {boolean} convertImageToBase64
  * @returns {Promise<string>}
  */
 export async function renderTemplate(
@@ -120,7 +123,7 @@ export async function renderTemplate(
 /**
  * Changing local file paths in <img> tags to base64 URIs
  * @param {string} htmlContent
- * @returns {string}
+ * @returns {Promise<string>}
  */
 async function changeImageSrcToBase64(htmlContent) {
   try {
