@@ -5,7 +5,7 @@ The IranCrypto Market Social Media Bot is a powerful project that leverages Node
 ### Features
 * **Crypto Market Data:** Fetches daily and weekly rankings of top cryptocurrencies from the [IranCryptoMarket API](https://irancrypto.market/api/).
 * **Engaging Content Generation:** Uses ChatGPT to create compelling English-language tweets that discuss the performance, volume, and price changes of the top cryptocurrencies.
-* **Instagram Image Creation:** Generates images for Instagram posts using [Node HTML to image](https://www.npmjs.com/package/node-html-to-image), based on templates created for the project.
+* **Instagram Image Creation:** Generates images for Instagram posts using [Puppeteer+Chromium](https://github.com/puppeteer/puppeteer), based on [Chromium for serverless](https://github.com/Sparticuz/chromium) which needs to be uploaded as a layer on AWS Lambda ([Guide](https://github.com/Sparticuz/chromium/tree/master/examples/serverless-with-preexisting-lambda-layer)) and also match with the version of puppeteer [Related Doc](https://pptr.dev/supported-browsers).
 * **Twitter Integration:** Posts generated content on Twitter using the [Twitter API V2](https://www.npmjs.com/package/twitter-api-v2), with credentials obtained using a CLI tool.
 * **Instagram Posting:** Shares the generated images as both posts and stories on Instagram, utilizing the [Instagram private API](https://www.npmjs.com/package/instagram-private-api).
 * **Telegram Posting:** Shares the generated images on Telegram channel, utilizing the [Node.JS Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
@@ -21,7 +21,7 @@ Twitter access token it's not a straight forward way, But for the rest of the mo
 4. **Environment Variables:** Configure your environment variables by adding them to the .env file. These variables include API keys, access tokens, and credentials for Twitter and Instagram.
 
 ```sh
-OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_MODEL=gpt-4
 OPENAI_API_KEY=<Your API Key>
 OPENAI_ORGANIZATION=<Your Organization API Key>
 DYNAMODB_TABLE=<Your Dynamo DB table name>
