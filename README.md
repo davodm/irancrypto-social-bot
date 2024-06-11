@@ -12,6 +12,14 @@ The IranCrypto Market Social Media Bot is a powerful project that leverages Node
 * **Serverless Execution:** Runs daily via AWS Lambda on a cron schedule, ensuring maintenance-free execution and scalability.
 * **AyreShare API:** In case of Instagram blockage, the project uses the [AyreShare API](https://www.ayrshare.com/) to bypass the checkpoint, you can set the API key on .env file to use it optionally.
 
+
+## Flow
+- **Fetch Data**: Fetches data from the API at 23:59 Iran time (20:29 UTC).
+- **Schedule Posts**: Schedules posts for different social media platforms (Twitter, Instagram, Telegram) at specified times.
+- **Post Data**: Posts the scheduled data at the specified times with hourly poster cronjob.
+- **Supports Daily, Weekly, and Monthly Recaps**: Handles daily recaps, weekly recaps every Friday, and monthly recaps on the last day of the month.
+
+
 ## Setup & Usage
 Twitter access token it's not a straight forward way, But for the rest of the modules, you just need to use the credientials on .env file.
 
@@ -47,6 +55,8 @@ TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
 CHROMIUM=<Your chromium path if you want to set it manually without AWS layers>
 
 AYRESHARE_API_KEY=<Your Ayreshre API Key - optionally>
+
+SCHEDULE_TIMEZONE=Asia/Tehran
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
@@ -74,9 +84,7 @@ Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob
 $ npm run instagram-auth
 ```
 
-1. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
-
-```sh
+8. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
 
 ## Installation
 1. Clone Repo
@@ -88,16 +96,22 @@ Whole serverless configuration will create DynamoDB table, attach the needed per
 
 ## Functionality
 - Twitter: Share two daily tweets about total market transactions and top 3 cryptocurrencies.
-- Instagram: Share a weekly post about 10 most traded cryptocurrencies.
+- Instagram: Share a weekly post about 10 most traded cryptocurrencies and a monthly post about trading value of 10 crypto exchanges.
 - Telegram: Share a daily post about 10 most traded cryptocurrencies.
 
 ### Cronjob
 Cronjob is set to run specificly for each controller:
-- Twitter: Every day at 8:00 & 9:00 PM.
-- Instagram: Every Friday at 8:00 PM.
-- Telegram: Every day at 9:01 PM.
+- Scheduler: 23:59 Iran time (20:29 UTC)
+- Poster: Every hour
 
-You can change cronjob settings from serverless.yml file.
+The `serverless.yml` file configures the scheduling of Lambda functions using AWS CloudWatch Events.
+
+
+## Improvements and Testing
+
+- Ensure thorough testing of all functions, especially the scheduling and posting logic, to handle edge cases and failures.
+- Refactor the code to improve maintainability and error handling.
+- Implement fallback mechanisms for AI-generated content to ensure graceful handling if AI fails.
 
 ## Contributing
 Pull requests are welcome! Feel free to open issues for any improvements or bugs.

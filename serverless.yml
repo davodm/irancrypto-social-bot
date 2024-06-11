@@ -36,6 +36,8 @@ provider:
             - dynamodb:GetItem
             - dynamodb:PutItem
             - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
           Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${env:DYNAMODB_TABLE}"
           
         - Effect: Allow
@@ -44,32 +46,18 @@ provider:
           Resource: "arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4" # Chromium v123.0.1
 
 functions:
-  tweet:
-    handler: tweet.handler
+  scheduler-midnight:
+    handler: scheduler.midnight
     events:
-      - schedule: cron(0 20,21 * * ? *)
+      - schedule: cron(29 20 * * ? *)
 
-  instagram-coinrecap-weekly:
-    handler: instagram.coinrecap
+  poster:
+    handler: poster.handler
     layers:
       - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4 # Chromium v123.0.1
     events:
-      - schedule: cron(0 20 ? * FRI *)
+      - schedule: rate(1 hour)
   
-  instagram-exchangerecap-monthly:
-    handler: instagram.exchangerecap
-    layers:
-      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4 # Chromium v123.0.1
-    events:
-      - schedule: cron(30 20 L * ? *) # last day of the month at 20:30
-  
-  telegram-coinrecap-daily:
-    handler: telegram.coinrecap
-    layers:
-      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4 # Chromium v123.0.1
-    events:
-      - schedule: cron(1 21 * * ? *)
-
 resources:
   Resources:
     ProjectTable:
