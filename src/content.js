@@ -1,5 +1,6 @@
 import { tweet } from "./twitter.js";
-import { writeTweet } from "./ai.js";
+import { publishImage } from "./instagram.js";
+import { writeTweet, writeCaption } from "./ai.js";
 import { abbreviateNumber, numFormat } from "./number.js";
 import { createImageFromTemplate, getRandomTheme } from "./html.js";
 import { getENV } from "./env.js";
@@ -11,30 +12,34 @@ const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 // AI prompts
 const tweetPrompts = {
   trends: `
-  Write about the top 3 crypto trends in the past 24 hours in Iran.
+  Write a tweet template about the top 3 crypto trends in the past 24 hours in Iran.
   Include only the name and volume in IRR currency and format each trend on a new line (\r\n) for clarity.
 
-  # Example 1:
+  # Examples listed below and you can use them as a reference,
+  but please make sure to change the data accordingly and add your own touch to the tweet 
+  and don't make it look like a copy-paste and the result should be just one tweet.
+
+  ## Example 1:
   Top 3 cryptos in Iran yesterday:
   1. %1% (%2% IRR)
   2. %3% (%4% IRR)
   3. %5% (%6% IRR)
   Which one did you trade? #Irancrypto #CryptoMarket
 
-  # Example 2:
+  ## Example 2:
   Yesterday's crypto buzz in Iran:
   1. %1% saw %2% IRR
   2. %3% hit %4% IRR
   3. %5% reached %6% IRR
   Did you cash in? #CryptoMarket #TopCrypto
 
-  # Example 3:
+  ## Example 3:
   Top 3 yesterday's #CryptoTrends in #Iran:
   1. %1%: Trading volume of %2% IRR
   2. %3%: Trading volume of %4% IRR
   3. %5%: Trading volume of %6% IRR
   Stay tuned for more updates! #CryptoNews #IranCrypto`,
-  
+
   vol: `Write a tweet template without listing about the total volume of crypto transactions in Iran in the past 24 hours, all in IRR currency.`,
 };
 

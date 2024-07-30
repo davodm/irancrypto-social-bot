@@ -1,8 +1,8 @@
 import { OpenAI } from "openai";
 import { getENV } from "./env.js";
 const openai = new OpenAI({
-  organization: process.env.OPENAI_ORGANIZATION,
-  apiKey: process.env.OPENAI_API_KEY,
+  organization: getENV("OPENAI_ORGANIZATION"),
+  apiKey: getENV("OPENAI_API_KEY"),
   timeout: 20 * 1000, // Timeout is in ms
 });
 const MODEL=getENV("OPENAI_MODEL","gpt-3.5-turbo");
