@@ -8,7 +8,7 @@
     "twitter-auth": "node -r dotenv/config auth/twitter.js",
     "instagram-auth": "node -r dotenv/config auth/instagram.js",
     "deploy": "serverless deploy",
-    "deploy-davod": "serverless deploy --aws-profile davod",
+    "deploy:davod": "serverless deploy --aws-profile davod",
     "test": "node --test test/*.js"
   },
   "repository": {
@@ -42,6 +42,9 @@
     "re2": "^1.22.1",
     "social-post-api": "^1.1.1",
     "twitter-api-v2": "^1.25.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "bluebird": "^3.7.2",
