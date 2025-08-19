@@ -96,12 +96,18 @@ $ npm run instagram-auth
 
 8. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
 
+## Prerequisites
+- **Node.js**: Version 22.x or higher (recommended: 22.x LTS)
+- **Serverless Framework**: Version 4.x (install globally: `npm install -g serverless@latest`)
+- **AWS CLI**: Configured with appropriate credentials
+
 ## Installation
 1. Clone Repo
 2. Run `npm install`
-3. Create .env file and fill out the values as explained
-4. **Test your AI configuration**: Run `npm test` to verify everything works
-5. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
+3. **Install Serverless Framework globally**: `npm install -g serverless@latest`
+4. Create .env file and fill out the values as explained
+5. **Test your AI configuration**: Run `npm test` to verify everything works
+6. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
 
 Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
 
