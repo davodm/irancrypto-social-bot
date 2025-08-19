@@ -129,5 +129,5 @@ dist
 .pnp.*
 .DS_STORE
 
-# Local Tests
+# Local test files
 tests/
