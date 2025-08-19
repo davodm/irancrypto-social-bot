@@ -1,6 +1,6 @@
 {
   "name": "irancrypto-social-bot",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "IranCrypto.market social bot which send daily stats and trends to different platforms",
   "type": "module",
   "main": "index.js",
