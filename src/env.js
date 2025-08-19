@@ -35,13 +35,10 @@ export function isENV($type) {
  * @returns {String}
  */
 export function getENV(key, default_value = undefined) {
-  if (
-    (!process.env.hasOwnProperty(key) || !process.env[key]) &&
-    default_value === undefined
-  ) {
+  if (!process.env?.[key] && default_value === undefined) {
     throw new Error(`Environment variable ${key} not found`);
   }
-  return process.env[key] || default_value;
+  return process.env?.[key] || default_value;
 }
 
 /**

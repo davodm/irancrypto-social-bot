@@ -9,10 +9,7 @@
     "instagram-auth": "node -r dotenv/config auth/instagram.js",
     "deploy": "serverless deploy",
     "deploy-davod": "serverless deploy --aws-profile davod",
-    "test": "node test/runner.js",
-    "test:watch": "node test/runner.js --watch",
-    "test:coverage": "node test/runner.js --coverage",
-    "test:simple": "node --test test/*.js"
+    "test": "node --test test/*.js"
   },
   "repository": {
     "type": "git",

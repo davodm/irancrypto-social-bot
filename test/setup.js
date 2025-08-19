@@ -1,19 +1,13 @@
-import dotenv from 'dotenv';
-import fs from 'fs';
+import dotenv from "dotenv";
+import fs from "fs";
 
-// Load ENV
-let envFile = null;
-const currentPath = process.cwd();
-
-if (envFile === null && fs.existsSync(`${currentPath}/.env`)) {
-  envFile = `${currentPath}/.env`;
-}
-
-if (envFile) {
+// Load .env file for tests
+const envFile = ".env";
+if (fs.existsSync(envFile)) {
   dotenv.config({ path: envFile });
 }
 
-// Global test utilities
+// Simple test utilities
 global.testUtils = {
   // Simple mock function creator
   createMock: (returnValue) => {
@@ -22,10 +16,12 @@ global.testUtils = {
       return returnValue;
     };
     mock.calls = [];
-    mock.reset = () => { mock.calls = []; };
+    mock.reset = () => {
+      mock.calls = [];
+    };
     return mock;
   },
-  
+
   // Simple spy function
   createSpy: (fn) => {
     const spy = (...args) => {
@@ -33,7 +29,9 @@ global.testUtils = {
       return fn ? fn(...args) : undefined;
     };
     spy.calls = [];
-    spy.reset = () => { spy.calls = []; };
+    spy.reset = () => {
+      spy.calls = [];
+    };
     return spy;
-  }
+  },
 };
