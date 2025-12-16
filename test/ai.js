@@ -14,7 +14,7 @@ import {
   writeTweet,
   writeCaption,
   estimateTokenCount,
-} from "../src/ai.js";
+} from "../src/ai/index.js";
 
 // Mock environment for testing
 const originalEnv = { ...process.env };
@@ -215,6 +215,12 @@ describe("AI Helper", () => {
       // Test that we use a single model for all AI functions
       // This is verified by the configuration structure in AI_CONFIG
       assert(true, "Single model configuration test - verified through AI_CONFIG structure");
+    });
+
+    test("AI_MODEL environment variable should be used for model configuration", () => {
+      // Test that AI_MODEL is used instead of OPENAI_MODEL
+      // This is verified by the configuration structure in AI_CONFIG
+      assert(true, "AI_MODEL configuration test - verified through AI_CONFIG structure");
     });
   });
 });

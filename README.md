@@ -30,42 +30,56 @@ Twitter access token it's not a straight forward way, But for the rest of the mo
 4. **Environment Variables:** Configure your environment variables by adding them to the .env file. These variables include API keys, access tokens, and credentials for Twitter, Instagram, and AI services.
 
 ```sh
-# AI Configuration (Multiple Providers Supported)
-OPENAI_MODEL=gpt-4o-mini  # Model for all AI services (tweets, captions, etc.)
-AI_PROVIDER=openai  # Primary provider (openai, openrouter, deepseek, groq, together)
-
-# AI Providers (Set at least one)
-OPENAI_API_KEY=<Your OpenAI API Key>  # Primary provider
-OPENAI_ORGANIZATION=<Your OpenAI Organization ID>  # Optional: For OpenAI
-OPENROUTER_API_KEY=<Your OpenRouter API Key>  # Alternative provider
-DEEPSEEK_API_KEY=<Your DeepSeek API Key>  # Additional provider
-GROQ_API_KEY=<Your Groq API Key>  # Additional provider
-TOGETHER_API_KEY=<Your Together AI API Key>  # Additional provider
+# ============================================
+# REQUIRED - Core Configuration
+# ============================================
 DYNAMODB_TABLE=<Your Dynamo DB table name>
 IRANCRYPTO_API_KEY=<Your API Key on IranCrypto>
 
+# ============================================
+# AI Configuration (REQUIRED: At least one provider API key)
+# ============================================
+AI_MODEL=gpt-4o-mini  # Optional: Model for all AI services (default: gpt-4o-mini)
+AI_PROVIDER=openai  # Optional: Primary provider (openai, openrouter, deepseek, groq, together)
+
+# Set at least ONE of the following AI provider API keys:
+OPENAI_API_KEY=<Your OpenAI API Key>  # Optional: Primary provider
+OPENAI_ORGANIZATION=<Your OpenAI Organization ID>  # Optional: Only for OpenAI
+OPENROUTER_API_KEY=<Your OpenRouter API Key>  # Optional: Alternative provider
+DEEPSEEK_API_KEY=<Your DeepSeek API Key>  # Optional: Additional provider
+GROQ_API_KEY=<Your Groq API Key>  # Optional: Additional provider
+TOGETHER_API_KEY=<Your Together AI API Key>  # Optional: Additional provider
+
+# ============================================
+# Twitter Configuration (REQUIRED for Twitter posting)
+# ============================================
 TWITTER_ACCESS_TOKEN=<Your twitter access token that you wont have it first>
 TWITTER_REFRESH_TOKEN=<Your twitter refresh token that you wont have it first>
-
 TWITTER_CLIENT_ID=<Your Twitter application client ID>
 TWITTER_CLIENT_SECRET=<Your Twitter application client Secret>
+TWITTER_CALLBACK_URL=https://randomurl/twitterbot/  # Should match your Twitter app config
 
-TWITTER_CALLBACK_URL=https://randomurl/twitterbot/ //Should be the same with your Twitter app config
-
+# ============================================
+# Instagram Configuration (REQUIRED for Instagram posting)
+# ============================================
 IG_USERNAME=<Your Instagram username>
 IG_PASSWORD=<Your Instagram password>
-IG_PROXY=<Your server proxy to use Instagram>
-IG_PRELOGIN=false //If you want to use prelogin simulation, set it to true
-IG_STORE_SESSION=true //If you want to store session on DynamoDB, set it to true
+IG_PROXY=<Your server proxy to use Instagram>  # Optional
+IG_PRELOGIN=false  # Optional: Set to true for prelogin simulation
+IG_STORE_SESSION=true  # Optional: Set to false to disable DynamoDB session storage
+AYRESHARE_API_KEY=<Your Ayreshare API Key>  # Optional: For bypassing Instagram checkpoints
 
-TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
+# ============================================
+# Telegram Configuration (REQUIRED for Telegram posting)
+# ============================================
 TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
+TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
 
-CHROMIUM=<Your chromium path if you want to set it manually without AWS layers>
-
-AYRESHARE_API_KEY=<Your Ayreshre API Key - optionally>
-
-SCHEDULE_TIMEZONE=Asia/Tehran
+# ============================================
+# Optional Configuration
+# ============================================
+SCHEDULE_TIMEZONE=Asia/Tehran  # Optional: Default timezone for scheduling (default: Asia/Tehran)
+CHROMIUM=<Your chromium path>  # Optional: Only if using local Chromium instead of AWS layer
 ```
 
 **AI Provider Configuration:**
@@ -75,15 +89,15 @@ SCHEDULE_TIMEZONE=Asia/Tehran
 - **Groq**: Set `GROQ_API_KEY` for Groq models
 - **Together AI**: Set `TOGETHER_API_KEY` for Together AI models
 - **Configuration**:
-  - `OPENAI_MODEL`: Single model used for all AI services (tweets, captions, etc.)
-  - `AI_PROVIDER`: Specify primary provider (openai, openrouter, deepseek, groq, together)
+  - `AI_MODEL`: Single model used for all AI services (tweets, captions, etc.)
+  - `AI_PROVIDER`: Specify primary provider (openai, openrouter, deepseek, groq, together) - requires corresponding API key
 - **Automatic Fallback**: If primary provider fails or isn't set, automatically selects the best available provider (priority: specified primary > OpenAI > OpenRouter > DeepSeek > Groq > Together)
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
 
 ```sh
-$ npm run twitter-auth
+$ npm run auth:twitter
 > Save Code verifierer below ->
 
 <....>
@@ -102,7 +116,7 @@ Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob
 7. **Instagram Checkpoint Bypass:** In case of Instagram blockage, you can use the CLI tool to bypass the checkpoint.
 
 ```sh
-$ npm run instagram-auth
+$ npm run auth:instagram
 ```
 
 8. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
@@ -121,6 +135,21 @@ $ npm run instagram-auth
 6. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
 
 Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
+
+## Environment Variables & Serverless Deployment
+
+**Important**: Environment variables are set **per Lambda function** in `serverless.yml`, not globally. Each function only receives the environment variables it actually needs:
+
+- **scheduler-midnight**: IranCrypto API access, DynamoDB, and scheduling configuration
+- **poster**: All environment variables (AI, Twitter, Instagram, Telegram, DynamoDB, IranCrypto API)
+
+**Optional Variables**: The `serverless.yml` configuration uses default empty strings for optional variables, so you don't need to set all AI provider keys, Instagram proxy, or other optional settings. Only set the variables you actually need:
+
+- **AI Providers**: Set at least one AI provider API key (OPENAI_API_KEY, OPENROUTER_API_KEY, etc.)
+- **Social Media Platforms**: Only set variables for platforms you want to use (Twitter, Instagram, Telegram)
+- **Optional Features**: IG_PROXY, AYRESHARE_API_KEY, etc. can be omitted if not needed
+
+The Serverless Framework will automatically load variables from `.env` during deployment and set them appropriately for each function. Missing optional variables will be set to empty strings, which won't cause deployment failures.
 
 ## Functionality
 - Twitter: Share two daily tweets about total market transactions and top 3 cryptocurrencies.

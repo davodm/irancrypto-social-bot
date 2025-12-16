@@ -55,6 +55,12 @@ functions:
       - schedule: cron(29 20 * * ? *)
     environment:
       FUNCTION_NAME: scheduler-midnight
+      # IranCrypto API access
+      IRANCRYPTO_API_KEY: ${env:IRANCRYPTO_API_KEY}
+      # DynamoDB access
+      DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
+      # Scheduling timezone
+      SCHEDULE_TIMEZONE: ${env:SCHEDULE_TIMEZONE, 'Asia/Tehran'}
 
   poster:
     handler: poster.handler
@@ -64,6 +70,36 @@ functions:
       - schedule: rate(1 hour)
     environment:
       FUNCTION_NAME: poster
+      # IranCrypto API access
+      IRANCRYPTO_API_KEY: ${env:IRANCRYPTO_API_KEY}
+      # DynamoDB access
+      DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
+      # AI Configuration (at least one provider API key required)
+      AI_MODEL: ${env:AI_MODEL, 'gpt-4o-mini'}
+      AI_PROVIDER: ${env:AI_PROVIDER, ''}
+      # AI Provider API Keys (set at least one)
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
+      OPENAI_ORGANIZATION: ${env:OPENAI_ORGANIZATION, ''}
+      OPENROUTER_API_KEY: ${env:OPENROUTER_API_KEY, ''}
+      DEEPSEEK_API_KEY: ${env:DEEPSEEK_API_KEY, ''}
+      GROQ_API_KEY: ${env:GROQ_API_KEY, ''}
+      TOGETHER_API_KEY: ${env:TOGETHER_API_KEY, ''}
+      # Twitter Configuration
+      TWITTER_ACCESS_TOKEN: ${env:TWITTER_ACCESS_TOKEN, ''}
+      TWITTER_REFRESH_TOKEN: ${env:TWITTER_REFRESH_TOKEN, ''}
+      TWITTER_CLIENT_ID: ${env:TWITTER_CLIENT_ID, ''}
+      TWITTER_CLIENT_SECRET: ${env:TWITTER_CLIENT_SECRET, ''}
+      TWITTER_CALLBACK_URL: ${env:TWITTER_CALLBACK_URL, ''}
+      # Instagram Configuration
+      IG_USERNAME: ${env:IG_USERNAME, ''}
+      IG_PASSWORD: ${env:IG_PASSWORD, ''}
+      IG_PROXY: ${env:IG_PROXY, ''}
+      IG_PRELOGIN: ${env:IG_PRELOGIN, 'false'}
+      IG_STORE_SESSION: ${env:IG_STORE_SESSION, 'true'}
+      AYRESHARE_API_KEY: ${env:AYRESHARE_API_KEY, ''}
+      # Telegram Configuration
+      TELEGRAM_BOT_TOKEN: ${env:TELEGRAM_BOT_TOKEN, ''}
+      TELEGRAM_CHANNEL_ID: ${env:TELEGRAM_CHANNEL_ID, ''}
   
 resources:
   Resources:

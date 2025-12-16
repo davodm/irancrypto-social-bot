@@ -9,8 +9,11 @@ describe('API Helper', () => {
   let restoreEnv;
 
   beforeEach(() => {
-    // Setup test environment
-    restoreEnv = setupTestEnv({ NODE_ENV: 'test' });
+    // Setup test environment with required API key
+    restoreEnv = setupTestEnv({
+      NODE_ENV: 'test',
+      IRANCRYPTO_API_KEY: 'test-api-key'
+    });
     
     // Create fetch mock
     fetchMock = (url, options) => {
@@ -49,7 +52,7 @@ describe('API Helper', () => {
 
     await assert.rejects(
       () => getPopular(),
-      /API Error/
+      /API request failed/
     );
     
     assert.strictEqual(fetchMock.calls.length, 1);
@@ -72,7 +75,7 @@ describe('API Helper', () => {
 
     await assert.rejects(
       () => getExchanges(),
-      /API Error/
+      /API request failed/
     );
     
     assert.strictEqual(fetchMock.calls.length, 1);
@@ -106,10 +109,22 @@ describe('API Helper', () => {
 
     await assert.rejects(
       () => getRecap('coin', 'monthly'),
-      /API Error/
+      /API request failed/
     );
     
     assert.strictEqual(fetchMock.calls.length, 1);
     assert.strictEqual(fetchMock.calls[0].url, 'https://irancrypto.market/api/v1/recap?type=coin&interval=monthly&limit=50');
+  });
+
+  test('getRecap should validate parameters', async () => {
+    await assert.rejects(
+      () => getRecap('invalid', 'weekly'),
+      /Invalid type: invalid/
+    );
+
+    await assert.rejects(
+      () => getRecap('coin', 'invalid'),
+      /Invalid interval: invalid/
+    );
   });
 });
