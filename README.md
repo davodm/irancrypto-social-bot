@@ -30,11 +30,17 @@ Twitter access token it's not a straight forward way, But for the rest of the mo
 4. **Environment Variables:** Configure your environment variables by adding them to the .env file. These variables include API keys, access tokens, and credentials for Twitter, Instagram, and AI services.
 
 ```sh
-# AI Configuration (OpenAI or OpenRouter)
-OPENAI_MODEL=gpt-4o-mini  # or any model like openai/gpt-oss-20b:free
-OPENAI_API_KEY=<Your OpenAI API Key>  # Optional: Primary AI provider
+# AI Configuration (Multiple Providers Supported)
+OPENAI_MODEL=gpt-4o-mini  # Model for all AI services (tweets, captions, etc.)
+AI_PROVIDER=openai  # Primary provider (openai, openrouter, deepseek, groq, together)
+
+# AI Providers (Set at least one)
+OPENAI_API_KEY=<Your OpenAI API Key>  # Primary provider
 OPENAI_ORGANIZATION=<Your OpenAI Organization ID>  # Optional: For OpenAI
-OPENROUTER_API_KEY=<Your OpenRouter API Key>  # Optional: Fallback AI provider
+OPENROUTER_API_KEY=<Your OpenRouter API Key>  # Alternative provider
+DEEPSEEK_API_KEY=<Your DeepSeek API Key>  # Additional provider
+GROQ_API_KEY=<Your Groq API Key>  # Additional provider
+TOGETHER_API_KEY=<Your Together AI API Key>  # Additional provider
 DYNAMODB_TABLE=<Your Dynamo DB table name>
 IRANCRYPTO_API_KEY=<Your API Key on IranCrypto>
 
@@ -65,8 +71,13 @@ SCHEDULE_TIMEZONE=Asia/Tehran
 **AI Provider Configuration:**
 - **OpenAI (Primary)**: Set `OPENAI_API_KEY` and optionally `OPENAI_ORGANIZATION`
 - **OpenRouter (Fallback)**: Set `OPENROUTER_API_KEY` for alternative AI models
-- **Model Selection**: Use `OPENAI_MODEL` to specify any supported model (e.g., `gpt-4o-mini`, `openai/gpt-oss-20b:free`)
-- **Automatic Fallback**: If OpenAI fails, the system automatically switches to OpenRouter
+- **DeepSeek**: Set `DEEPSEEK_API_KEY` for DeepSeek models
+- **Groq**: Set `GROQ_API_KEY` for Groq models
+- **Together AI**: Set `TOGETHER_API_KEY` for Together AI models
+- **Configuration**:
+  - `OPENAI_MODEL`: Single model used for all AI services (tweets, captions, etc.)
+  - `AI_PROVIDER`: Specify primary provider (openai, openrouter, deepseek, groq, together)
+- **Automatic Fallback**: If primary provider fails or isn't set, automatically selects the best available provider (priority: specified primary > OpenAI > OpenRouter > DeepSeek > Groq > Together)
 ```
 
 5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
