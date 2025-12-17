@@ -1,158 +1,212 @@
 import { tweet } from "./twitter.js";
 import { publishImage } from "./instagram.js";
-import { writeTweet, writeCaption } from "./ai.js";
+import { writeTweet, writeCaption } from "./ai/index.js";
 import { abbreviateNumber, numFormat } from "./number.js";
 import { createImageFromTemplate, getRandomTheme } from "./html.js";
 import { getENV } from "./env.js";
+import {
+  replacePlaceholders,
+  formatHashtagBlock,
+  normalizeLineBreaks,
+  safeArrayAccess,
+} from "./util.js";
 import TelegramBot from "node-telegram-bot-api";
 import moment from "moment";
+import { captureError } from "./sentry.js";
 
 const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
-// AI prompts
+// Default line break style for tweets (CRLF for Twitter compatibility)
+const TWEET_LINE_BREAK = "\r\n";
+
+// AI prompts for tweet generation
 const tweetPrompts = {
-  trends: `
-  Write a tweet template about the top 3 crypto trends in the past 24 hours in Iran.
-  Include only the name and volume in IRR currency and format each trend on a new line (\r\n) for clarity.
+  trends: `Create ONE tweet template about the top 3 crypto trends in Iran in the last 24 hours.
 
-  # Examples listed below and you can use them as a reference,
-  but please make sure to change the data accordingly and add your own touch to the tweet 
-  and don't make it look like a copy-paste and the result should be just one tweet.
+Output format (exact):
+Top 3 crypto trends in Iran (24h):
+1. %1% (%2% IRR)
+2. %3% (%4% IRR)
+3. %5% (%6% IRR)
 
-  ## Example 1:
-  Top 3 cryptos in Iran yesterday:
-  1. %1% (%2% IRR)
-  2. %3% (%4% IRR)
-  3. %5% (%6% IRR)
-  Which one did you trade? #Irancrypto #CryptoMarket
+Rules:
+- Put each item on a new line using \\r\\n (not commas).
+- Include ONLY coin name + volume placeholders (no extra metrics).
+- End with a short question/CTA.
+- Add 2-3 relevant hashtags.
+- Output ONLY the tweet text.`,
 
-  ## Example 2:
-  Yesterday's crypto buzz in Iran:
-  1. %1% saw %2% IRR
-  2. %3% hit %4% IRR
-  3. %5% reached %6% IRR
-  Did you cash in? #CryptoMarket #TopCrypto
+  vol: `Create ONE tweet template about the total crypto transaction volume in Iran in the last 24 hours.
 
-  ## Example 3:
-  Top 3 yesterday's #CryptoTrends in #Iran:
-  1. %1%: Trading volume of %2% IRR
-  2. %3%: Trading volume of %4% IRR
-  3. %5%: Trading volume of %6% IRR
-  Stay tuned for more updates! #CryptoNews #IranCrypto`,
-
-  vol: `Write a tweet template without listing about the total volume of crypto transactions in Iran in the past 24 hours, all in IRR currency.`,
+Requirements:
+- Use placeholders: Total volume = %1% IRR
+- No list / no multiple items
+- 1-2 short sentences, then a brief question/CTA
+- Optional: 0-1 emoji
+- Output ONLY the tweet text`,
 };
 
+/**
+ * Create and post a tweet based on target type
+ * @param {string} target - Tweet type ('trends' or 'vol')
+ * @param {Array} data - Popular items data
+ */
 export async function makeTweet(target, data) {
-  // Calculate total Vol
-  let totalVolIRR = 0;
-  data.forEach((item) => {
-    totalVolIRR += item.irr.volume;
-    item.irrfvol = abbreviateNumber(item.irr.volume, 1, false); //Formatted version
-  });
+  try {
+    // Calculate total volume
+    let totalVolIRR = 0;
+    data.forEach((item) => {
+      totalVolIRR += item.irr.volume;
+      item.irrfvol = abbreviateNumber(item.irr.volume, 1, false);
+    });
 
-  // Make Tweet
-  let phrase = await writeTweet(tweetPrompts[target]);
-  phrase = completeTweetPhrase(target, phrase, data, totalVolIRR);
+    // Generate tweet from AI
+    let phrase = await writeTweet(tweetPrompts[target], {
+      lineBreak: TWEET_LINE_BREAK,
+    });
 
-  // Send tweet
-  if (phrase) {
-    console.log("Tweeting...", phrase);
-    await tweet(phrase);
+    if (!phrase) {
+      console.warn(`Failed to generate tweet for target: ${target}`);
+      return;
+    }
+
+    // Replace placeholders with actual data
+    phrase = completeTweetPhrase(target, phrase, data, totalVolIRR);
+
+    // Send tweet
+    if (phrase) {
+      console.log("Tweeting...", phrase);
+      await tweet(phrase);
+    }
+  } catch (error) {
+    captureError(error, {
+      tags: {
+        worker: 'content',
+        function: 'makeTweet',
+        target: target
+      },
+      extra: {
+        dataLength: data?.length || 0
+      }
+    });
+    throw error; // Re-throw to maintain Lambda error handling
   }
 }
 
+/**
+ * Create and post content to Telegram
+ * @param {string} target - Content type
+ * @param {Array} data - Data for the content
+ */
 export async function makeTelegram(target, data) {
-  // Total Trade Volume
-  const totalVol = data
-    .filter((item) => item.has_iran)
-    .reduce((acc, item) => acc + item.irr.volume, 0);
-  // Filter Data
-  const tokens = data
-    .filter((item) => item.has_iran)
-    .map((item) => {
-      return {
+  try {
+    // Total Trade Volume
+    const totalVol = data
+      .filter((item) => item.has_iran)
+      .reduce((acc, item) => acc + item.irr.volume, 0);
+
+    // Filter Data
+    const tokens = data
+      .filter((item) => item.has_iran)
+      .map((item) => ({
         name: item.name_en,
-        price: "$" + numFormat(item.usd.price_avg),
+        price: "$" + numFormat(item.usd.price),
         volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
         icon: item.icon,
-      };
-    })
-    .slice(0, 10);
+      }))
+      .slice(0, 10);
 
-  // Yesterday date
-  const date = moment().subtract(1, "day").format("YYYY-MM-DD");
+    // Yesterday date
+    const date = moment().subtract(1, "day").format("YYYY-MM-DD");
 
-  // Create Image
-  const image = await createImageFromTemplate(
-    "table-coin-" + getRandomTheme(),
-    {
-      tokens,
-      headers: ["Token", "Average Price", "Traded Volume"],
-      title: "Daily Recap",
-      subtitle: `Total traded volume today: ${abbreviateNumber(
-        Math.round(totalVol),
-        0,
-        true
-      )} IRR`,
-      lastUpdate: date,
-    },
-    "daily-coins.jpg"
-  );
+    // Create Image
+    const image = await createImageFromTemplate(
+      "table-coin-" + getRandomTheme(),
+      {
+        tokens,
+        headers: ["Token", "Average Price", "Traded Volume"],
+        title: "Daily Recap",
+        subtitle: `Total traded volume (24h): ${abbreviateNumber(
+          Math.round(totalVol),
+          0,
+          true
+        )} IRR`,
+        lastUpdate: date,
+      },
+      "daily-coins.jpg"
+    );
 
-  if (!image) {
-    throw new Error("Image is not generated!");
-  }
-  // Caption Manually
-  const caption = `
+    if (!image) {
+      throw new Error("Image is not generated!");
+    }
+
+    // Caption Manually
+    const caption = `
 📈 Yesterday's Crypto Market Recap | ${date}
 
-📊 Total Traded Volume Today: ${numFormat(Math.round(totalVol))} IRR
+📊 Total Traded Volume (24h): ${numFormat(Math.round(totalVol))} IRR
 
-🖥 Check the website for more details: 
+🖥 Check the website for more details:
 <a href="https://irancrypto.market/popular/">irancrypto.market</a>
 
-🛎 Follow us on 
-<a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a> | 
-<a href="https://twitter.com/ircryptomarket">Twitter @ircryptomarket</a> | 
+🛎 Follow us on
+<a href="https://instagram.com/irancryptomarket">Instagram @irancryptomarket</a> |
+<a href="https://twitter.com/ircryptomarket">Twitter @ircryptomarket</a> |
 <a href="https://t.me/irancrypto_market">Telegram @irancrypto_market</a>
 `;
 
-  // Publish the image on Telegram channel
-  await bot.sendPhoto(
-    getENV("TELEGRAM_CHANNEL_ID"),
-    image,
-    {
-      caption: caption,
-      parse_mode: "html",
-      disable_web_page_preview: true,
-    },
-    {
-      filename: `daily-coins-${new Date().toISOString().slice(0, 10)}.jpg`,
-      contentType: "image/jpeg",
-    }
-  );
-  console.log("Daily coin recap published successfully on telegram");
+    // Publish the image on Telegram channel
+    await bot.sendPhoto(
+      getENV("TELEGRAM_CHANNEL_ID"),
+      image,
+      {
+        caption: caption,
+        parse_mode: "html",
+        disable_web_page_preview: true,
+      },
+      {
+        filename: `daily-coins-${new Date().toISOString().slice(0, 10)}.jpg`,
+        contentType: "image/jpeg",
+      }
+    );
+    console.log("Daily coin recap published successfully on telegram");
+  } catch (error) {
+    captureError(error, {
+      tags: {
+        worker: 'content',
+        function: 'makeTelegram',
+        target: target
+      },
+      extra: {
+        dataLength: data?.length || 0
+      }
+    });
+    throw error; // Re-throw to maintain Lambda error handling
+  }
 }
 
+/**
+ * Create and post content to Instagram
+ * @param {string} target - Content type ('weekly-coin' or 'monthly-exchange')
+ * @param {Array} data - Data for the content
+ */
 export async function makeInstagram(target, data) {
-  if (target === "weekly-coin") {
+  try {
+    if (target === "weekly-coin") {
     // Total trade volume
     const totalVol = data
       .filter((item) => item.has_iran)
       .reduce((acc, item) => acc + item.irr.volume, 0);
+
     // Filter Data
     const tokens = data
       .filter((item) => item.has_iran)
-      .map((item) => {
-        return {
-          name: item.name_en,
-          price: "$" + numFormat(item.usd.price_avg),
-          volume:
-            abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-          icon: item.icon,
-        };
-      })
+      .map((item) => ({
+        name: item.name_en,
+        price: "$" + numFormat(item.usd.price),
+        volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
+        icon: item.icon,
+      }))
       .slice(0, 10);
 
     // Create Image
@@ -175,153 +229,120 @@ export async function makeInstagram(target, data) {
     if (!image) {
       throw new Error("Image is not generated!");
     }
+
     // Get Caption from AI
     const caption = await writeCaption(
       "Weekly recap of the most traded tokens on the Iran's cryptocurrency market"
     );
-    // Publish the image on IG
-    await publishImage(image, caption);
-    console.log("Weekly coin recap published on Instagram");
-  } else if (target === "monthly-exchange") {
-    // Total Trade Volume
-    const totalVol = data.reduce((acc, item) => acc + item.volume, 0);
-    // Filter Data
-    const exchanges = data
-      .map((item) => {
-        return {
+
+      // Publish the image on IG
+      await publishImage(image, caption);
+      console.log("Weekly coin recap published on Instagram");
+    } else if (target === "monthly-exchange") {
+      // Total Trade Volume
+      const totalVol = data.reduce((acc, item) => acc + item.volume, 0);
+
+      // Filter Data
+      const exchanges = data
+        .map((item) => ({
           name: item.name_en,
           volume: numFormat(Math.round(item.volume), 1, true) + " IRR",
           logo: item.logo,
-        };
-      })
-      .slice(0, 5);
+        }))
+        .slice(0, 5);
 
-    // Create Image
-    const image = await createImageFromTemplate(
-      "table-exchange-dark",
-      {
-        exchanges,
-        title: "Exchanges Monthly Recap",
-        subtitle: `Total traded volume in past month: ${abbreviateNumber(
-          Math.round(totalVol),
-          0,
-          true
-        )} IRR`,
-        lastUpdate: new Date().toISOString().slice(0, 10),
-      },
-      "monthly-exchange.jpg"
-    );
+      // Create Image
+      const image = await createImageFromTemplate(
+        "table-exchange-dark",
+        {
+          exchanges,
+          title: "Exchanges Monthly Recap",
+          subtitle: `Total traded volume in past month: ${abbreviateNumber(
+            Math.round(totalVol),
+            0,
+            true
+          )} IRR`,
+          lastUpdate: new Date().toISOString().slice(0, 10),
+        },
+        "monthly-exchange.jpg"
+      );
 
-    if (!image) {
-      throw new Error("Image is not generated!");
+      if (!image) {
+        throw new Error("Image is not generated!");
+      }
+
+      // Get Caption from AI
+      const caption = await writeCaption(
+        "Monthly recap of the most popular exchanges (based on transactions) in Iran's cryptocurrency market"
+      );
+
+      // Publish the image on IG
+      await publishImage(image, caption);
+      console.log("Monthly recap exchanges published on Instagram");
     }
-    // Get Caption from AI
-    const caption = await writeCaption(
-      "Monthly recap of the most popular exchanges (based on transactions) in Iran's cryptocurrency market"
-    );
-    // Publish the image on IG
-    await publishImage(image, caption);
-    console.log("Monthly recap exchanges published on Instagram");
+  } catch (error) {
+    captureError(error, {
+      tags: {
+        worker: 'content',
+        function: 'makeInstagram',
+        target: target
+      },
+      extra: {
+        dataLength: data?.length || 0
+      }
+    });
+    throw error; // Re-throw to maintain Lambda error handling
   }
 }
 
 /**
- * Complete the template provided by AI for tweet
- * @param {string} $type
- * @param {string} $content
- * @param {object[]} $popularItems
- * @param {number} $totalVolIRR
- * @returns {string}
+ * Complete the template provided by AI for tweet with actual data
+ * @param {string} type - Tweet type ('trends' or 'vol')
+ * @param {string} content - Tweet template with placeholders
+ * @param {Array} popularItems - Array of popular crypto items
+ * @param {number} totalVolIRR - Total volume in IRR
+ * @returns {string} Completed tweet text
  */
-function completeTweetPhrase($type, $content, $popularItems, $totalVolIRR) {
-  switch ($type.toLowerCase()) {
+function completeTweetPhrase(type, content, popularItems, totalVolIRR) {
+  if (!content) {
+    return "";
+  }
+
+  let replacements = {};
+
+  switch (type.toLowerCase()) {
     case "trends":
-      let placeholderIndex = 1;
+      // Build replacements for top 3 items (with fallbacks for missing data)
       for (let i = 0; i < 3; i++) {
-        //Name
-        $content = $content.replace(
-          `%${placeholderIndex}%`,
-          $popularItems[i].name_en
-        );
-        placeholderIndex++;
-        //Vol
-        $content = $content.replace(
-          `%${placeholderIndex}%`,
-          $popularItems[i].irrfvol
-        );
-        placeholderIndex++;
+        const item = safeArrayAccess(popularItems, i, null);
+        const nameKey = (i * 2 + 1).toString();
+        const volKey = (i * 2 + 2).toString();
+
+        if (item) {
+          replacements[nameKey] = item.name_en || "Unknown";
+          replacements[volKey] = item.irrfvol || "N/A";
+        } else {
+          replacements[nameKey] = "N/A";
+          replacements[volKey] = "N/A";
+        }
       }
       break;
+
     case "vol":
-      $content = $content.replace(
-        `%1%`,
-        abbreviateNumber($totalVolIRR, 1, true)
-      );
+      replacements["1"] = abbreviateNumber(totalVolIRR, 1, true);
       break;
+
     default:
-      throw new Error("Template could not recognized");
-      break;
-  }
-  return lineBreak($content);
-}
-
-/**
- * Line break before hashtag
- * @param {string} inputText
- * @returns {string}
- */
-function lineBreak(inputText) {
-  // Find the hashtags
-  const hashtags = findHashtags(inputText);
-  // If there is no second last hashtag or no hashtags at all
-  if (hashtags.count == 0 || hashtags.atEnd.length == 0) {
-    return inputText;
-  }
-  // Find the index of the first last hashtag
-  let hashtagIndex = inputText.indexOf(hashtags.atEnd[0]);
-  // If there is no index of the second last hashtag, return the input text
-  if (hashtagIndex === -1) {
-    return inputText;
-  }
-  // Insert a line break before the first hashtag
-  let formattedText = inputText;
-  formattedText =
-    formattedText.slice(
-      0,
-      inputText[hashtagIndex - 1] === " " ? hashtagIndex - 1 : hashtagIndex
-    ) + // If there is a space before the hashtag, remove it
-    "\n\n" +
-    formattedText.slice(hashtagIndex);
-  return formattedText;
-}
-
-/**
- * Find hashtags in the content
- * @param {string} content
- * @returns {object}
- */
-function findHashtags(content) {
-  const hashtags = content.match(/#\w+/g) || [];
-  let lastLineStartIndex = content.lastIndexOf("\n") + 1;
-  // If there's no newline, use the splitIndex based on content length
-  if (lastLineStartIndex === 0) {
-    lastLineStartIndex = Math.floor(content.length * 0.75); // Adjust the 0.75 as needed
-  }
-  const hashtagsInText = [];
-  const hashtagsAtEnd = [];
-
-  for (const hashtag of hashtags) {
-    const hashtagIndex = content.indexOf(hashtag);
-    if (hashtagIndex >= lastLineStartIndex) {
-      hashtagsAtEnd.push(hashtag);
-    } else {
-      hashtagsInText.push(hashtag);
-    }
+      console.warn(`Unknown tweet type: ${type}`);
+      return content;
   }
 
-  return {
-    count: hashtags.length,
-    inText: hashtagsInText,
-    atEnd: hashtagsAtEnd,
-  };
+  // Replace placeholders safely
+  let result = replacePlaceholders(content, replacements, "N/A");
+
+  // Normalize line breaks and format hashtags consistently
+  result = normalizeLineBreaks(result, TWEET_LINE_BREAK);
+  result = formatHashtagBlock(result, TWEET_LINE_BREAK);
+
+  return result;
 }
