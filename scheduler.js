@@ -2,12 +2,13 @@ import { getPopular, getRecap } from './src/api.js';
 import { schedulePost } from './src/dynamodb.js';
 import moment from 'moment-timezone';
 import { getENV } from './src/env.js';
+import { captureError } from './src/sentry.js';
 
 const SCHEDULE_TIMEZONE = getENV("SCHEDULE_TIMEZONE","Asia/Tehran");
 
 // Daily coin recap for Telegram -> 9 AM tomorrow
 async function scheduleDailyRecap() {
-  const data = await getRecap("coin", "daily");
+  const data = await getPopular();
   if (data) {
     const scheduleTime = getNextScheduleTime(9);
     await schedulePost('telegram', 'dailyrecap', data, scheduleTime.unix());
@@ -60,19 +61,32 @@ function isTodayLastDayOfMonth(timezone) {
 }
 
 export const midnight = async (event) => {
-  await scheduleDailyRecap();
-  await scheduleDailyPopular();
-  // Only Fridays
-  if (moment().tz(SCHEDULE_TIMEZONE).day() === 5) {
-    await scheduleWeeklyRecap();
-  }
-  // Only last day of month
-  if (isTodayLastDayOfMonth(SCHEDULE_TIMEZONE)) {
-    await scheduleMonthlyRecap();
-  }
+  try {
+    await scheduleDailyRecap();
+    await scheduleDailyPopular();
+    // Only Fridays
+    if (moment().tz(SCHEDULE_TIMEZONE).day() === 5) {
+      await scheduleWeeklyRecap();
+    }
+    // Only last day of month
+    if (isTodayLastDayOfMonth(SCHEDULE_TIMEZONE)) {
+      await scheduleMonthlyRecap();
+    }
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Data fetched and posts scheduled successfully' }),
-  };
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ message: 'Data fetched and posts scheduled successfully' }),
+    };
+  } catch (error) {
+    captureError(error, {
+      tags: {
+        worker: 'scheduler',
+        function: 'midnight'
+      },
+      extra: {
+        event: event
+      }
+    });
+    throw error; // Re-throw to maintain Lambda error handling
+  }
 };

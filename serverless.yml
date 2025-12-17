@@ -42,11 +42,14 @@ provider:
             - dynamodb:DeleteItem
             - dynamodb:Scan
           Resource: "arn:aws:dynamodb:${self:provider.region}:*:table/${env:DYNAMODB_TABLE}"
-          
+
         - Effect: Allow
           Action:
             - lambda:GetLayerVersion
-          Resource: "arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4" # Chromium v123.0.1
+          Resource:
+            - "arn:aws:lambda:${self:provider.region}:*:layer:chromium:*"
+            - "arn:aws:lambda:${self:provider.region}:*:layer:chromium-arm64:*"
+            - "arn:aws:lambda:eu-west-1:725824641220:layer:chromium:*"
 
 functions:
   scheduler-midnight:
@@ -61,11 +64,13 @@ functions:
       DYNAMODB_TABLE: ${env:DYNAMODB_TABLE}
       # Scheduling timezone
       SCHEDULE_TIMEZONE: ${env:SCHEDULE_TIMEZONE, 'Asia/Tehran'}
+      # Error tracking
+      SENTRY_DNS: ${env:SENTRY_DNS, ''}
 
   poster:
     handler: poster.handler
     layers:
-      - arn:aws:lambda:eu-west-1:725824641220:layer:chromium:4 # Chromium v123.0.1
+      - "${env:CHROMIUM_LAYER_ARN}"
     events:
       - schedule: rate(1 hour)
     environment:
@@ -100,6 +105,8 @@ functions:
       # Telegram Configuration
       TELEGRAM_BOT_TOKEN: ${env:TELEGRAM_BOT_TOKEN, ''}
       TELEGRAM_CHANNEL_ID: ${env:TELEGRAM_CHANNEL_ID, ''}
+      # Error tracking
+      SENTRY_DNS: ${env:SENTRY_DNS, ''}
   
 resources:
   Resources:
