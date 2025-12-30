@@ -1,3 +1,4 @@
+import './src/sentry.js'; // Initialize Sentry early
 import { getPopular, getRecap } from './src/api.js';
 import { schedulePost } from './src/dynamodb.js';
 import moment from 'moment-timezone';

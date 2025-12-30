@@ -132,7 +132,7 @@ async function changeImageSrcToBase64(htmlContent) {
     // Regular expression to match <img> tags with local file paths
     const imgTagRegex = /<img[^>]*src=["']((?!https?:\/\/)[^"']+)["'][^>]*>/gi;
 
-    // Function to replace matched <img> tags with base64 URIs
+    // Function to replace matched <img> tags with base64 URIs or full URLs
     const replaceImgTags = async (match) => {
       try {
         // Extract the src attribute value
@@ -145,7 +145,8 @@ async function changeImageSrcToBase64(htmlContent) {
         if (imagePath.startsWith("{{")) {
           return match;
         }
-        // Read the image file
+
+        // For local files, convert to base64
         const imagePathAbsolute = path.join(baseDir, imagePath);
         const imageBuffer = await fs.promises.readFile(imagePathAbsolute);
         const base64Image = Buffer.from(imageBuffer).toString("base64");

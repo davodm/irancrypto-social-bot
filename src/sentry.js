@@ -2,12 +2,15 @@
 import * as Sentry from "@sentry/node";
 import { getENV } from "./env.js";
 
-// Initialize Sentry only if SENTRY_DNS is provided and not empty
-const sentryDsn = getENV("SENTRY_DNS", "");
+// Initialize Sentry only if SENTRY_DSN is provided and not empty
+const sentryDsn = getENV("SENTRY_DSN", "");
 
 if (sentryDsn && sentryDsn.trim() !== "") {
   Sentry.init({
     dsn: sentryDsn,
+
+    // Performance Monitoring
+    tracesSampleRate: 0
   });
   console.log("Sentry initialized successfully");
 } else {
@@ -31,6 +34,10 @@ export function captureError(error, context = {}) {
   }
 }
 
+export function captureException(error, context = {}) {
+  return captureError(error, context);
+}
+
 /**
  * Capture a message with Sentry
  * @param {string} message - The message to capture
@@ -46,4 +53,22 @@ export function captureMessage(message, level = "info", context = {}) {
   } else {
     console.log(`[${level.toUpperCase()}] ${message}`);
   }
+}
+
+export function withSentry(handler) {
+  return async (...args) => {
+    try {
+      return await handler(...args);
+    } catch (error) {
+      captureError(error, {
+        tags: {
+          handler: handler.name || 'anonymous'
+        },
+        extra: {
+          args: args.length > 0 ? JSON.stringify(args) : undefined
+        }
+      });
+      throw error;
+    }
+  };
 }

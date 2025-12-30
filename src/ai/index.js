@@ -43,24 +43,23 @@ export async function writeTweet(subject, options = {}) {
     lineBreak: options.lineBreak || "\r\n",
   };
 
-  const systemPrompt = `You write ONE tweet for IranCrypto.market (Iranian crypto monitoring platform).
+  const systemPrompt = `You write creative, engaging tweets for IranCrypto.market (Iran's crypto monitoring platform).
 
-Hard constraints:
-- Max ${config.maxLength} characters.
-- Tone: ${config.tone}, clear and credible. No financial advice.
-- If money appears, use IRR.
-- Use placeholders for data: %1%, %2%, ...
-- If the tweet includes a list, use numbered format with ${JSON.stringify(config.lineBreak)} line breaks.
-- ${config.includeHashtags ? "Add 2-3 relevant hashtags at the end." : "No hashtags."}
-- Light emojis (0-2).
-Return ONLY the tweet text.`;
+STYLE:
+- Be dynamic and insightful, not template-y or boring
+- Use the data to tell a story or highlight interesting patterns
+- Vary your approach: questions, insights, comparisons, highlights
+- ${config.tone} tone, no financial advice
+- Currency: IRR
 
-  const userPrompt = `Task:
-${subject.trim()}
+CONSTRAINTS:
+- Max ${config.maxLength} characters
+- ${config.includeHashtags ? "2-3 relevant hashtags at end" : "No hashtags"}
+- 0-2 emojis, natural placement
 
-Reminder:
-- Use ${JSON.stringify(config.lineBreak)} for line breaks if needed.
-- Keep it within ${config.maxLength} characters.`;
+OUTPUT: Only the tweet text.`;
+
+  const userPrompt = `${subject.trim()}`;
 
   try {
     const result = await ask(
@@ -68,7 +67,7 @@ Reminder:
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      { temperature: 0.7, maxTokens: 300 }
+      { temperature: 0.7, maxTokens: 4000 }
     );
 
     if (!result || result.length === 0) {
@@ -111,26 +110,29 @@ export async function writeCaption(subject, options = {}) {
     maxLength: options.maxLength || 400,
   };
 
-  const systemPrompt = `You write ONE Instagram caption for IranCrypto.market (Iranian crypto monitoring platform).
+  const systemPrompt = `You write creative, engaging Instagram captions for IranCrypto.market (Iran's crypto monitoring platform).
 
-Hard constraints:
-- Max ${config.maxLength} characters.
-- Tone: ${config.style}; educational, trustworthy, no financial advice.
-- If money appears, use IRR.
-- Use ${JSON.stringify(config.lineBreak)} for line breaks.
-- Format: Hook (1 line) → Value (1-2 short paragraphs) → ${
-    config.includeCall2Action ? "Call-to-action (1 line)" : "Closing (1 line)"
-  } → Hashtags (last line).
-- Hashtags: 0-${config.maxHashtags}, relevant, placed only on the last line.
-- Emojis: 0-4, used naturally.
-Return ONLY the caption text (no markdown, no quotes, no headings).`;
+STYLE:
+- Be dynamic and insightful, not template-y or boring
+- Use the data to tell a story, highlight trends, or share interesting insights
+- Vary your hooks: questions, bold statements, surprising facts
+- ${config.style} tone, educational, no financial advice
+- Currency: IRR
 
-  const userPrompt = `Topic:
-${subject.trim()}
+STRUCTURE:
+- Hook (grab attention)
+- 1-2 paragraphs (insights from the data)
+- ${config.includeCall2Action ? "CTA (call-to-action)" : "Closing line"}
+- Hashtags at end
 
-Reminder:
-- Keep it concise and readable.
-- Do not include bullet lists unless the topic explicitly asks for it.`;
+CONSTRAINTS:
+- Max ${config.maxLength} characters
+- 0-${config.maxHashtags} relevant hashtags
+- 0-4 emojis, natural placement
+
+OUTPUT: Only the caption text.`;
+
+  const userPrompt = `${subject.trim()}`;
 
   try {
     const result = await ask(
@@ -138,7 +140,7 @@ Reminder:
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      { temperature: 0.7, maxTokens: 350 }
+      { temperature: 0.7, maxTokens: 4000 }
     );
 
     if (!result || result.length === 0) {

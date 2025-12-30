@@ -92,7 +92,7 @@ TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
 # Optional Configuration
 # ============================================
 SCHEDULE_TIMEZONE=Asia/Tehran  # Optional: Default timezone for scheduling (default: Asia/Tehran)
-SENTRY_DNS=<Your Sentry DSN>  # Optional: Sentry DSN for error tracking (leave empty to disable)
+SENTRY_DSN=<Your Sentry DSN>  # Optional: Sentry DSN for error tracking (leave empty to disable)
 
 # ============================================
 # Auto-managed by Chromium deployment script
@@ -153,6 +153,7 @@ $ npm run auth:instagram
 4. Create .env file and fill out the values as explained
 5. **Deploy Chromium Layer**: Run `npm run deploy:chromium` (or `npm run deploy:chromium:davod` for specific profile)
 6. **Test your AI configuration**: Run `npm test` to verify everything works
+7. **Functional Testing**: Run `npm run test:functional` to test AI caption generation, API connectivity, and image generation without posting
 7. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
 
 Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
@@ -223,11 +224,46 @@ Cronjob is set to run specificly for each controller:
 
 The `serverless.yml` file configures the scheduling of Lambda functions using AWS CloudWatch Events.
 
+## Functional Testing
+
+The project includes a comprehensive functional test suite that allows you to test all major components without posting to social media platforms:
+
+```bash
+# Test AI caption generation for Instagram/Twitter
+node tests/test.js caption
+
+# Test API endpoints and data retrieval
+node tests/test.js api
+
+# Test image generation (saves images to writable/ directory)
+node tests/test.js image
+
+# Run all tests
+node tests/test.js all
+
+# Show help
+node tests/test.js help
+```
+
+Or use the npm script:
+```bash
+npm run test:functional
+```
+
+**What gets tested:**
+- AI-powered caption generation for different content types
+- API connectivity and data validation for popular coins, exchanges, and recap data
+- Image generation for daily recaps, weekly recaps, and monthly exchange reports
+- Data processing and formatting functions
+
+**Note:** These tests generate content and images but do NOT post to social media platforms, making them safe for development and testing.
+
 ## Improvements and Testing
 
 - **Automated Chromium Deployment**: Intelligent Chromium layer deployment with version auto-detection and multi-architecture support
 - **AI Provider Fallback**: Implemented intelligent fallback between OpenAI and OpenRouter APIs
 - **Comprehensive Testing**: Full test suite with Node.js built-in test runner (17/17 tests passing)
+- **Functional Testing**: Advanced test runner for testing AI caption generation, API functionality, and image generation without posting
 - **Production Ready**: Lightweight, production-ready AI helper with graceful error handling
 - **Environment Management**: Proper .env loading and configuration management
 - **Cost Optimization**: Automatic S3 cleanup and efficient layer management

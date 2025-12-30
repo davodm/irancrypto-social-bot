@@ -1,6 +1,6 @@
 {
   "name": "irancrypto-social-bot",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "IranCrypto.market social bot which send daily stats and trends to different platforms",
   "type": "module",
   "main": "index.js",
@@ -11,7 +11,8 @@
     "deploy:davod": "serverless deploy --aws-profile davod",
     "deploy:chromium": "./scripts/deploy-chromium-layer.sh",
     "deploy:chromium:davod": "./scripts/deploy-chromium-layer.sh --profile davod",
-    "test": "node --test test/*.js"
+    "test": "node --test test/*.js",
+    "test:functional": "node -r dotenv/config test.js"
   },
   "repository": {
     "type": "git",
@@ -33,7 +34,7 @@
   },
   "homepage": "https://github.com/davodm/irancrypto-social-bot#readme",
   "dependencies": {
-    "@sentry/node": "^10.31.0",
+    "@sentry/node": "^10.32.1",
     "file-type": "^21.1.1",
     "handlebars": "^4.7.8",
     "instagram-private-api": "^1.46.1",
