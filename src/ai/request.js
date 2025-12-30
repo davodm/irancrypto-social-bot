@@ -10,71 +10,86 @@ const PROVIDERS = {
   TOGETHER: "together",
 };
 
-// AI Configuration with enhanced model and provider support
-const AI_CONFIG = {
-  maxTokens: 8000,
-  temperature: 0.7,
-  timeout: 30000,
+// AI Configuration with enhanced model and provider support (lazy-loaded)
+let AI_CONFIG = null;
 
-  // Single model for all AI services
-  model: getENV("AI_MODEL", "gpt-4o-mini"),
+/**
+ * Get the current AI configuration with lazy-loaded environment variables
+ * @returns {Object} AI configuration object
+ */
+function getAIConfig() {
+  // Lazy load environment variables only when needed
+  if (!AI_CONFIG) {
+    AI_CONFIG = {
+      maxTokens: 8000,
+      temperature: 0.7,
+      timeout: 30000,
 
-  // Primary provider override (optional)
-  primaryProvider: getENV("AI_PROVIDER", null), // Can be: openai, openrouter, deepseek, groq, together
+      // Single model for all AI services
+      model: getENV("AI_MODEL", "gpt-4o-mini"),
 
-  // Provider-specific configurations
-  providers: {
-    [PROVIDERS.OPENAI]: {
-      baseURL: "https://api.openai.com/v1",
-      apiKey: getENV("OPENAI_API_KEY", null),
-      organization: getENV("OPENAI_ORGANIZATION", null),
-      defaultHeaders: {},
-    },
-    [PROVIDERS.OPENROUTER]: {
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: getENV("OPENROUTER_API_KEY", null),
-      organization: null,
-      defaultHeaders: {
-        "HTTP-Referer": "https://irancrypto.market",
-        "X-Title": "IranCrypto.market",
-        "X-Description": "Iran's leading cryptocurrency monitoring platform",
+      // Primary provider override (optional)
+      primaryProvider: getENV("AI_PROVIDER", null), // Can be: openai, openrouter, deepseek, groq, together
+
+      // Provider-specific configurations
+      providers: {
+        [PROVIDERS.OPENAI]: {
+          baseURL: "https://api.openai.com/v1",
+          apiKey: getENV("OPENAI_API_KEY", null),
+          organization: getENV("OPENAI_ORGANIZATION", null),
+          defaultHeaders: {},
+        },
+        [PROVIDERS.OPENROUTER]: {
+          baseURL: "https://openrouter.ai/api/v1",
+          apiKey: getENV("OPENROUTER_API_KEY", null),
+          organization: null,
+          defaultHeaders: {
+            "HTTP-Referer": "https://irancrypto.market",
+            "X-Title": "IranCrypto.market",
+            "X-Description": "Iran's leading cryptocurrency monitoring platform",
+          },
+        },
+        [PROVIDERS.DEEPSEEK]: {
+          baseURL: "https://api.deepseek.com/v1",
+          apiKey: getENV("DEEPSEEK_API_KEY", null),
+          organization: null,
+          defaultHeaders: {},
+        },
+        [PROVIDERS.GROQ]: {
+          baseURL: "https://api.groq.com/openai/v1",
+          apiKey: getENV("GROQ_API_KEY", null),
+          organization: null,
+          defaultHeaders: {},
+        },
+        [PROVIDERS.TOGETHER]: {
+          baseURL: "https://api.together.xyz/v1",
+          apiKey: getENV("TOGETHER_API_KEY", null),
+          organization: null,
+          defaultHeaders: {},
+        },
       },
-    },
-    [PROVIDERS.DEEPSEEK]: {
-      baseURL: "https://api.deepseek.com/v1",
-      apiKey: getENV("DEEPSEEK_API_KEY", null),
-      organization: null,
-      defaultHeaders: {},
-    },
-    [PROVIDERS.GROQ]: {
-      baseURL: "https://api.groq.com/openai/v1",
-      apiKey: getENV("GROQ_API_KEY", null),
-      organization: null,
-      defaultHeaders: {},
-    },
-    [PROVIDERS.TOGETHER]: {
-      baseURL: "https://api.together.xyz/v1",
-      apiKey: getENV("TOGETHER_API_KEY", null),
-      organization: null,
-      defaultHeaders: {},
-    },
-  },
-};
+    };
+
+  }
+
+  return AI_CONFIG;
+}
 
 // Client cache for different providers
 const clientCache = new Map();
 let currentProvider = null;
 
-// Validate primary provider configuration on module load
-validatePrimaryProvider();
+// AI module loaded (configuration will be lazy-loaded when needed)
+console.log("🤖 AI Module loaded (lazy configuration)");
 
 /**
  * Validate that if a primary provider is set, its API key exists
  * @throws {Error} When primary provider is set but API key is missing
  */
 function validatePrimaryProvider() {
-  if (AI_CONFIG.primaryProvider) {
-    const primaryConfig = AI_CONFIG.providers[AI_CONFIG.primaryProvider];
+  const config = getAIConfig();
+  if (config.primaryProvider) {
+    const primaryConfig = config.providers[config.primaryProvider];
     if (!primaryConfig || !primaryConfig.apiKey) {
       const providerKeyMap = {
         [PROVIDERS.OPENAI]: 'OPENAI_API_KEY',
@@ -84,9 +99,9 @@ function validatePrimaryProvider() {
         [PROVIDERS.TOGETHER]: 'TOGETHER_API_KEY',
       };
 
-      const requiredKey = providerKeyMap[AI_CONFIG.primaryProvider];
+      const requiredKey = providerKeyMap[config.primaryProvider];
       throw new Error(
-        `AI_PROVIDER is set to '${AI_CONFIG.primaryProvider}' but ${requiredKey} environment variable is not set`
+        `AI_PROVIDER is set to '${config.primaryProvider}' but ${requiredKey} environment variable is not set`
       );
     }
   }
@@ -97,12 +112,14 @@ function validatePrimaryProvider() {
  * Priority: Primary provider (if set) > OpenAI > OpenRouter > DeepSeek > Groq > Together
  */
 function getBestAvailableProvider() {
+  const config = getAIConfig();
+
   // Validate primary provider configuration first
   validatePrimaryProvider();
 
   // If a primary provider is specified and available, use it
-  if (AI_CONFIG.primaryProvider) {
-    return AI_CONFIG.primaryProvider;
+  if (config.primaryProvider) {
+    return config.primaryProvider;
   }
 
   // Default priority order
@@ -115,8 +132,8 @@ function getBestAvailableProvider() {
   ];
 
   for (const provider of priority) {
-    const config = AI_CONFIG.providers[provider];
-    if (config.apiKey) {
+    const providerConfig = config.providers[provider];
+    if (providerConfig.apiKey) {
       return provider;
     }
   }
@@ -130,7 +147,8 @@ function getBestAvailableProvider() {
  * @returns {OpenAI} OpenAI client instance
  */
 function createClient(provider) {
-  const config = AI_CONFIG.providers[provider];
+  const aiConfig = getAIConfig();
+  const config = aiConfig.providers[provider];
   if (!config || !config.apiKey) {
     throw new Error(`Provider ${provider} is not configured or missing API key`);
   }
@@ -139,7 +157,7 @@ function createClient(provider) {
     apiKey: config.apiKey,
     baseURL: config.baseURL,
     organization: config.organization,
-    timeout: AI_CONFIG.timeout,
+    timeout: aiConfig.timeout,
     defaultHeaders: config.defaultHeaders,
   });
 }
@@ -200,28 +218,68 @@ export async function ask(messages, options = {}) {
 
   // Get client for specified or best available provider
   const client = getAIClient(options.provider);
+  const aiConfig = getAIConfig();
 
   // Determine model to use
-  const model = options.model || AI_CONFIG.model;
+  const model = options.model || aiConfig.model;
 
   const config = {
     model: model,
     messages: messages,
-    max_tokens: options.maxTokens || AI_CONFIG.maxTokens,
-    temperature: options.temperature || AI_CONFIG.temperature,
+    max_tokens: options.maxTokens || aiConfig.maxTokens,
+    temperature: options.temperature || aiConfig.temperature,
   };
 
   try {
+    console.log(`🤖 Making AI request to ${currentProvider} with model ${config.model}`);
     const result = await client.chat.completions.create(config);
+
+    // Debug: Log the raw response structure
+    console.log("🤖 AI Response received:");
+    console.log("  Result exists:", !!result);
+    console.log("  Choices exists:", !!result?.choices);
+    console.log("  Choices length:", result?.choices?.length || 0);
+    if (result?.choices?.[0]) {
+      console.log("  First choice exists:", !!result.choices[0]);
+      console.log("  Message exists:", !!result.choices[0].message);
+      console.log("  Content exists:", !!result.choices[0].message?.content);
+      console.log("  Content length:", result.choices[0].message?.content?.length || 0);
+      console.log("  Content preview:", result.choices[0].message?.content?.substring(0, 100) || "EMPTY");
+    }
 
     // Validate response
     if (!result || !result.choices || result.choices.length === 0) {
       throw new Error("No response choices received from AI model");
     }
 
-    // Additional validation for response quality
+    // Validate response content
     const firstChoice = result.choices[0];
-    if (!firstChoice.message || !firstChoice.message.content) {
+
+    // Check for truncated response (finish_reason: 'length')
+    if (firstChoice.finish_reason === 'length') {
+      console.warn("⚠️ AI response was truncated (finish_reason: 'length')");
+      console.warn("  This often happens with reasoning models that exhaust tokens on internal reasoning");
+
+      // If there's partial content, we can still try to use it
+      if (firstChoice.message?.content && firstChoice.message.content.trim().length > 20) {
+        console.warn("  Using partial content (may be incomplete)");
+      } else {
+        throw new Error("AI response was truncated before producing content. Try increasing maxTokens or using a different model.");
+      }
+    }
+
+    if (!firstChoice.message || !firstChoice.message.content || firstChoice.message.content.trim().length === 0) {
+      console.error("🤖 Content validation failed:");
+      console.error("  firstChoice:", firstChoice);
+      console.error("  firstChoice.message:", firstChoice.message);
+      console.error("  firstChoice.message.content:", firstChoice.message?.content);
+
+      // Provide more helpful error message for reasoning models
+      if (firstChoice.message?.reasoning) {
+        console.error("  Note: Model has reasoning output but no content - likely a reasoning model that exhausted tokens");
+        throw new Error("AI model exhausted tokens on reasoning before generating content. Try a non-reasoning model or increase maxTokens significantly.");
+      }
+
       throw new Error("AI response contains no content");
     }
 
@@ -229,6 +287,17 @@ export async function ask(messages, options = {}) {
   } catch (error) {
     // Enhanced error handling with provider context
     const providerInfo = currentProvider ? ` (${currentProvider})` : '';
+
+    // Log detailed error information for debugging
+    console.error(`🤖 AI Error Details${providerInfo}:`);
+    console.error(`  Status: ${error.status || 'unknown'}`);
+    console.error(`  Code: ${error.code || 'unknown'}`);
+    console.error(`  Type: ${error.type || 'unknown'}`);
+    console.error(`  Message: ${error.message || 'unknown'}`);
+    if (error.response) {
+      console.error(`  Response Status: ${error.response.status}`);
+      console.error(`  Response Data:`, error.response.data);
+    }
 
     if (error.code === "insufficient_quota") {
       throw new Error(`AI service${providerInfo} quota exceeded. Please check your billing or try a different provider.`);
@@ -242,8 +311,16 @@ export async function ask(messages, options = {}) {
       throw new Error(`AI authentication failed${providerInfo}. Please check your API key.`);
     } else if (error.code === "rate_limit_exceeded") {
       throw new Error(`AI rate limit exceeded${providerInfo}. Please try again later.`);
+    } else if (error.status === 429) {
+      throw new Error(`AI rate limit exceeded${providerInfo} (429). Please wait and try again, or check your API usage limits.`);
+    } else if (error.status === 401) {
+      throw new Error(`AI authentication failed${providerInfo} (401). Please check your API key is valid.`);
+    } else if (error.status === 403) {
+      throw new Error(`AI access forbidden${providerInfo} (403). Please check your account permissions.`);
+    } else if (error.status === 500) {
+      throw new Error(`AI service internal error${providerInfo} (500). Please try again later.`);
     } else {
-      throw new Error(`AI service error${providerInfo}: ${error.message}`);
+      throw new Error(`AI service error${providerInfo}: ${error.message || 'Unknown error'}`);
     }
   }
 }

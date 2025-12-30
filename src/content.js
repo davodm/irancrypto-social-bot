@@ -4,12 +4,6 @@ import { writeTweet, writeCaption } from "./ai/index.js";
 import { abbreviateNumber, numFormat } from "./number.js";
 import { createImageFromTemplate, getRandomTheme } from "./html.js";
 import { getENV } from "./env.js";
-import {
-  replacePlaceholders,
-  formatHashtagBlock,
-  normalizeLineBreaks,
-  safeArrayAccess,
-} from "./util.js";
 import TelegramBot from "node-telegram-bot-api";
 import moment from "moment";
 import { captureError } from "./sentry.js";
@@ -19,32 +13,52 @@ const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 // Default line break style for tweets (CRLF for Twitter compatibility)
 const TWEET_LINE_BREAK = "\r\n";
 
-// AI prompts for tweet generation
-const tweetPrompts = {
-  trends: `Create ONE tweet template about the top 3 crypto trends in Iran in the last 24 hours.
+/**
+ * Build dynamic AI prompt for tweets with real data and date context
+ * @param {string} type - Tweet type ('trends' or 'vol')
+ * @param {Array} data - Popular items data
+ * @param {number} totalVolIRR - Total volume in IRR
+ * @returns {string} Dynamic prompt with real data
+ */
+function buildTweetPrompt(type, data, totalVolIRR) {
+  const today = moment().format("MMMM D, YYYY");
+  const dayOfWeek = moment().format("dddd");
 
-Output format (exact):
-Top 3 crypto trends in Iran (24h):
-1. %1% (%2% IRR)
-2. %3% (%4% IRR)
-3. %5% (%6% IRR)
+  if (type === "trends") {
+    const top3 = data.slice(0, 3).map((item, i) => ({
+      rank: i + 1,
+      name: item.name_en,
+      symbol: item.symbol,
+      volume: abbreviateNumber(item.irr.volume, 1, true),
+    }));
 
-Rules:
-- Put each item on a new line using \\r\\n (not commas).
-- Include ONLY coin name + volume placeholders (no extra metrics).
-- End with a short question/CTA.
-- Add 2-3 relevant hashtags.
-- Output ONLY the tweet text.`,
+    return `Write a creative tweet about today's top 3 crypto trends in Iran.
 
-  vol: `Create ONE tweet template about the total crypto transaction volume in Iran in the last 24 hours.
+DATE: ${dayOfWeek}, ${today}
+PERIOD: Last 24 hours
 
-Requirements:
-- Use placeholders: Total volume = %1% IRR
-- No list / no multiple items
-- 1-2 short sentences, then a brief question/CTA
-- Optional: 0-1 emoji
-- Output ONLY the tweet text`,
-};
+TOP 3 BY TRADING VOLUME:
+${top3.map(c => `${c.rank}. ${c.name} (${c.symbol}) - ${c.volume} IRR`).join("\n")}
+
+TOTAL MARKET VOLUME: ${abbreviateNumber(totalVolIRR, 1, true)} IRR
+
+Make it engaging - highlight the leader, mention the rankings, ask a question or add insight.
+Vary your style from previous posts - be creative!`;
+  }
+
+  if (type === "vol") {
+    return `Write a creative tweet about Iran's crypto trading volume today.
+
+DATE: ${dayOfWeek}, ${today}
+PERIOD: Last 24 hours
+TOTAL VOLUME: ${abbreviateNumber(totalVolIRR, 1, true)} IRR
+
+Share this volume milestone creatively. Add context, ask a question, or note the market activity.
+Keep it fresh and different from typical volume announcements!`;
+  }
+
+  return "";
+}
 
 /**
  * Create and post a tweet based on target type
@@ -53,15 +67,19 @@ Requirements:
  */
 export async function makeTweet(target, data) {
   try {
-    // Calculate total volume
-    let totalVolIRR = 0;
-    data.forEach((item) => {
-      totalVolIRR += item.irr.volume;
-      item.irrfvol = abbreviateNumber(item.irr.volume, 1, false);
-    });
+    // Calculate total volume - use BigInt to avoid precision issues with large numbers
+    const totalVolIRR = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.irr?.volume || 0)), 0n));
 
-    // Generate tweet from AI
-    let phrase = await writeTweet(tweetPrompts[target], {
+    // Build dynamic prompt with real data and date context
+    const prompt = buildTweetPrompt(target, data, totalVolIRR);
+
+    if (!prompt) {
+      console.warn(`Unknown tweet target: ${target}`);
+      return;
+    }
+
+    // Generate tweet from AI with real data
+    const phrase = await writeTweet(prompt, {
       lineBreak: TWEET_LINE_BREAK,
     });
 
@@ -70,14 +88,9 @@ export async function makeTweet(target, data) {
       return;
     }
 
-    // Replace placeholders with actual data
-    phrase = completeTweetPhrase(target, phrase, data, totalVolIRR);
-
-    // Send tweet
-    if (phrase) {
-      console.log("Tweeting...", phrase);
-      await tweet(phrase);
-    }
+    // Send tweet (no placeholder replacement needed - AI has real data)
+    console.log("Tweeting...", phrase);
+    await tweet(phrase);
   } catch (error) {
     captureError(error, {
       tags: {
@@ -100,10 +113,10 @@ export async function makeTweet(target, data) {
  */
 export async function makeTelegram(target, data) {
   try {
-    // Total Trade Volume
+    // Total Trade Volume - use BigInt to avoid precision issues with large numbers
     const totalVol = data
       .filter((item) => item.has_iran)
-      .reduce((acc, item) => acc + item.irr.volume, 0);
+      .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n);
 
     // Filter Data
     const tokens = data
@@ -112,7 +125,7 @@ export async function makeTelegram(target, data) {
         name: item.name_en,
         price: "$" + numFormat(item.usd.price),
         volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-        icon: item.icon,
+        icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
       }))
       .slice(0, 10);
 
@@ -127,7 +140,7 @@ export async function makeTelegram(target, data) {
         headers: ["Token", "Average Price", "Traded Volume"],
         title: "Daily Recap",
         subtitle: `Total traded volume (24h): ${abbreviateNumber(
-          Math.round(totalVol),
+          Number(totalVol),
           0,
           true
         )} IRR`,
@@ -144,7 +157,7 @@ export async function makeTelegram(target, data) {
     const caption = `
 📈 Yesterday's Crypto Market Recap | ${date}
 
-📊 Total Traded Volume (24h): ${numFormat(Math.round(totalVol))} IRR
+📊 Total Traded Volume (24h): ${numFormat(Number(totalVol))} IRR
 
 🖥 Check the website for more details:
 <a href="https://irancrypto.market/popular/">irancrypto.market</a>
@@ -186,6 +199,74 @@ export async function makeTelegram(target, data) {
 }
 
 /**
+ * Build dynamic AI prompt for Instagram captions with real data and date context
+ * @param {string} type - Caption type ('weekly-coin' or 'monthly-exchange')
+ * @param {Array} data - Content data
+ * @param {number} totalVol - Total volume
+ * @returns {string} Dynamic prompt with real data
+ */
+function buildInstagramPrompt(type, data, totalVol) {
+  const today = moment().format("MMMM D, YYYY");
+  const weekStart = moment().subtract(7, "days").format("MMM D");
+  const weekEnd = moment().format("MMM D, YYYY");
+  const monthName = moment().format("MMMM YYYY");
+
+  if (type === "weekly-coin") {
+    const top5 = data.slice(0, 5).map((item, i) => ({
+      rank: i + 1,
+      name: item.name_en,
+      volume: abbreviateNumber(item.irr?.volume || 0, 1, true),
+    }));
+
+    const leader = top5[0];
+    const leaderShare = totalVol > 0 ? Math.round((data[0]?.irr?.volume || 0) / totalVol * 100) : 0;
+
+    return `Write an Instagram caption for our weekly crypto market recap in Iran.
+
+DATE: ${today}
+PERIOD: Week of ${weekStart} - ${weekEnd}
+
+TOP 5 TOKENS BY VOLUME:
+${top5.map(t => `${t.rank}. ${t.name} - ${t.volume} IRR`).join("\n")}
+
+HIGHLIGHTS:
+- Total weekly volume: ${abbreviateNumber(totalVol, 1, true)} IRR
+- ${leader.name} dominated with ${leaderShare}% of total volume
+- These are the most traded tokens this week
+
+Make it insightful and engaging. Mention the week dates, highlight the leader, share a market insight.`;
+  }
+
+  if (type === "monthly-exchange") {
+    const top5 = data.slice(0, 5).map((item, i) => ({
+      rank: i + 1,
+      name: item.name_en,
+      volume: abbreviateNumber(item.volume || 0, 1, true),
+    }));
+
+    const leader = top5[0];
+    const leaderShare = totalVol > 0 ? Math.round((data[0]?.volume || 0) / totalVol * 100) : 0;
+
+    return `Write an Instagram caption for our monthly exchange performance recap in Iran.
+
+DATE: ${today}
+PERIOD: ${monthName}
+
+TOP 5 EXCHANGES BY VOLUME:
+${top5.map(e => `${e.rank}. ${e.name} - ${e.volume} IRR`).join("\n")}
+
+HIGHLIGHTS:
+- Total monthly volume: ${abbreviateNumber(totalVol, 1, true)} IRR
+- ${leader.name} leads with ${leaderShare}% market share
+- These exchanges processed the most trades this month
+
+Make it insightful and engaging. Mention the month, highlight the competition, share exchange trends.`;
+  }
+
+  return "";
+}
+
+/**
  * Create and post content to Instagram
  * @param {string} target - Content type ('weekly-coin' or 'monthly-exchange')
  * @param {Array} data - Data for the content
@@ -193,54 +274,53 @@ export async function makeTelegram(target, data) {
 export async function makeInstagram(target, data) {
   try {
     if (target === "weekly-coin") {
-    // Total trade volume
-    const totalVol = data
-      .filter((item) => item.has_iran)
-      .reduce((acc, item) => acc + item.irr.volume, 0);
+      // Total trade volume - use BigInt to avoid precision issues with large numbers
+      const totalVol = Number(data
+        .filter((item) => item.has_iran)
+        .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n));
 
-    // Filter Data
-    const tokens = data
-      .filter((item) => item.has_iran)
-      .map((item) => ({
-        name: item.name_en,
-        price: "$" + numFormat(item.usd.price),
-        volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-        icon: item.icon,
-      }))
-      .slice(0, 10);
+      // Filter Data
+      const filteredData = data.filter((item) => item.has_iran);
+      const tokens = filteredData
+        .map((item) => ({
+          name: item.name_en,
+          price: "$" + numFormat(item.usd.price),
+          volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
+          icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
+        }))
+        .slice(0, 10);
 
-    // Create Image
-    const image = await createImageFromTemplate(
-      "table-coin-" + getRandomTheme(),
-      {
-        tokens,
-        headers: ["Token", "Average Price", "Traded Volume"],
-        title: "Weekly Recap",
-        subtitle: `Total traded volume in past week: ${abbreviateNumber(
-          Math.round(totalVol),
-          0,
-          true
-        )} IRR`,
-        lastUpdate: new Date().toISOString().slice(0, 10),
-      },
-      "weekly-coins.jpg"
-    );
+      // Create Image
+      const image = await createImageFromTemplate(
+        "table-coin-" + getRandomTheme(),
+        {
+          tokens,
+          headers: ["Token", "Average Price", "Traded Volume"],
+          title: "Weekly Recap",
+          subtitle: `Total traded volume in past week: ${abbreviateNumber(
+            Math.round(totalVol),
+            0,
+            true
+          )} IRR`,
+          lastUpdate: new Date().toISOString().slice(0, 10),
+        },
+        "weekly-coins.jpg"
+      );
 
-    if (!image) {
-      throw new Error("Image is not generated!");
-    }
+      if (!image) {
+        throw new Error("Image is not generated!");
+      }
 
-    // Get Caption from AI
-    const caption = await writeCaption(
-      "Weekly recap of the most traded tokens on the Iran's cryptocurrency market"
-    );
+      // Get Caption from AI with real data and date context
+      const prompt = buildInstagramPrompt("weekly-coin", filteredData, totalVol);
+      const caption = await writeCaption(prompt);
 
       // Publish the image on IG
       await publishImage(image, caption);
       console.log("Weekly coin recap published on Instagram");
     } else if (target === "monthly-exchange") {
-      // Total Trade Volume
-      const totalVol = data.reduce((acc, item) => acc + item.volume, 0);
+      // Total Trade Volume - use BigInt to avoid precision issues with large numbers
+      const totalVol = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.volume || 0)), 0n));
 
       // Filter Data
       const exchanges = data
@@ -271,10 +351,9 @@ export async function makeInstagram(target, data) {
         throw new Error("Image is not generated!");
       }
 
-      // Get Caption from AI
-      const caption = await writeCaption(
-        "Monthly recap of the most popular exchanges (based on transactions) in Iran's cryptocurrency market"
-      );
+      // Get Caption from AI with real data and date context
+      const prompt = buildInstagramPrompt("monthly-exchange", data, totalVol);
+      const caption = await writeCaption(prompt);
 
       // Publish the image on IG
       await publishImage(image, caption);
@@ -295,54 +374,3 @@ export async function makeInstagram(target, data) {
   }
 }
 
-/**
- * Complete the template provided by AI for tweet with actual data
- * @param {string} type - Tweet type ('trends' or 'vol')
- * @param {string} content - Tweet template with placeholders
- * @param {Array} popularItems - Array of popular crypto items
- * @param {number} totalVolIRR - Total volume in IRR
- * @returns {string} Completed tweet text
- */
-function completeTweetPhrase(type, content, popularItems, totalVolIRR) {
-  if (!content) {
-    return "";
-  }
-
-  let replacements = {};
-
-  switch (type.toLowerCase()) {
-    case "trends":
-      // Build replacements for top 3 items (with fallbacks for missing data)
-      for (let i = 0; i < 3; i++) {
-        const item = safeArrayAccess(popularItems, i, null);
-        const nameKey = (i * 2 + 1).toString();
-        const volKey = (i * 2 + 2).toString();
-
-        if (item) {
-          replacements[nameKey] = item.name_en || "Unknown";
-          replacements[volKey] = item.irrfvol || "N/A";
-        } else {
-          replacements[nameKey] = "N/A";
-          replacements[volKey] = "N/A";
-        }
-      }
-      break;
-
-    case "vol":
-      replacements["1"] = abbreviateNumber(totalVolIRR, 1, true);
-      break;
-
-    default:
-      console.warn(`Unknown tweet type: ${type}`);
-      return content;
-  }
-
-  // Replace placeholders safely
-  let result = replacePlaceholders(content, replacements, "N/A");
-
-  // Normalize line breaks and format hashtags consistently
-  result = normalizeLineBreaks(result, TWEET_LINE_BREAK);
-  result = formatHashtagBlock(result, TWEET_LINE_BREAK);
-
-  return result;
-}
