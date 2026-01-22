@@ -4,48 +4,57 @@ import { schedulePost } from './src/dynamodb.js';
 import moment from 'moment-timezone';
 import { getENV } from './src/env.js';
 import { captureError } from './src/sentry.js';
+import { isDataValid } from './src/util.js';
 
 const SCHEDULE_TIMEZONE = getENV("SCHEDULE_TIMEZONE","Asia/Tehran");
 
 // Daily coin recap for Telegram -> 9 AM tomorrow
 async function scheduleDailyRecap() {
   const data = await getPopular();
-  if (data) {
-    const scheduleTime = getNextScheduleTime(9);
-    await schedulePost('telegram', 'dailyrecap', data, scheduleTime.unix());
-    console.log('Daily coin recap scheduled for tomorrow on Telegram');
+  if (!isDataValid(data, 'Daily Recap (Telegram)')) {
+    console.log('❌ Skipping daily recap scheduling for Telegram - invalid or stale data');
+    return;
   }
+  const scheduleTime = getNextScheduleTime(9);
+  await schedulePost('telegram', 'dailyrecap', data, scheduleTime.unix());
+  console.log('Daily coin recap scheduled for tomorrow on Telegram');
 }
 
 // Daily Popular coins for twitter -> 9-10 AM tomorrow
 async function scheduleDailyPopular() {
   const data = await getPopular();
-  if (data) {
-    const scheduleTime = getNextScheduleTime(9);
-    await schedulePost('twitter', 'trends', data, scheduleTime.unix());
-    await schedulePost('twitter', 'vol', data, scheduleTime.add(1, 'hour').unix());
-    console.log('Daily popular coins scheduled for tomorrow on Twitter');
+  if (!isDataValid(data, 'Daily Popular (Twitter)')) {
+    console.log('❌ Skipping daily popular scheduling for Twitter - invalid or stale data');
+    return;
   }
+  const scheduleTime = getNextScheduleTime(9);
+  await schedulePost('twitter', 'trends', data, scheduleTime.unix());
+  await schedulePost('twitter', 'vol', data, scheduleTime.add(1, 'hour').unix());
+  console.log('Daily popular coins scheduled for tomorrow on Twitter');
 }
 
 // Weekly coin recap for Instagram -> 9 AM tomorrow
 async function scheduleWeeklyRecap() {
   const data = await getRecap("coin", "weekly");
-  if (data) {
-    const scheduleTime = getNextScheduleTime(9);
-    await schedulePost('instagram', 'weekly-coin', data, scheduleTime.unix());
-    console.log('Weekly coin recap scheduled for tomorrow on Instagram');
+  if (!isDataValid(data, 'Weekly Recap (Instagram)')) {
+    console.log('❌ Skipping weekly recap scheduling for Instagram - invalid or stale data');
+    return;
   }
+  const scheduleTime = getNextScheduleTime(9);
+  await schedulePost('instagram', 'weekly-coin', data, scheduleTime.unix());
+  console.log('Weekly coin recap scheduled for tomorrow on Instagram');
 }
 
 // Monthly exchange recap for Instagram -> 9 AM tomorrow
 async function scheduleMonthlyRecap() {
   const data = await getRecap("exchange", "monthly");
-  if (data) {
-    const scheduleTime = getNextScheduleTime(9);
-    await schedulePost('instagram', 'monthly-exchange', data, scheduleTime.unix());
-    console.log('Monthly exchange recap scheduled for tomorrow on Instagram');
+  if (!isDataValid(data, 'Monthly Exchange Recap (Instagram)')) {
+    console.log('❌ Skipping monthly recap scheduling for Instagram - invalid or stale data');
+    return;
   }
+  const scheduleTime = getNextScheduleTime(9);
+  await schedulePost('instagram', 'monthly-exchange', data, scheduleTime.unix());
+  console.log('Monthly exchange recap scheduled for tomorrow on Instagram');
 }
 
 function getNextScheduleTime(hour) {

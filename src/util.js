@@ -2,6 +2,54 @@
  * Utility Helper Functions
  * Reusable functions for text processing, formatting, and validation
  */
+import moment from 'moment';
+
+const MAX_DATA_AGE_HOURS = 24; // Maximum age of data before it's considered stale
+
+/**
+ * Validates that data is fresh and non-empty
+ * Checks if data exists, is a non-empty array, and optionally validates freshness
+ * @param {Array} data - The data array to validate
+ * @param {string} dataType - Description of the data type for logging
+ * @param {number} maxAgeHours - Maximum age in hours (default: 24)
+ * @returns {boolean} - True if data is valid and fresh
+ */
+export function isDataValid(data, dataType = 'data', maxAgeHours = MAX_DATA_AGE_HOURS) {
+  // Check if data exists
+  if (!data) {
+    console.log(`⚠️ ${dataType}: No data received (null/undefined)`);
+    return false;
+  }
+
+  // Check if data is an array with items
+  if (!Array.isArray(data) || data.length === 0) {
+    console.log(`⚠️ ${dataType}: Data is empty or not an array`);
+    return false;
+  }
+
+  // Check for data freshness using last_update field (if available)
+  // The API may include last_update at the item level
+  const firstItem = data[0];
+  const lastUpdate = firstItem?.last_update || firstItem?.updated_at || firstItem?.timestamp;
+  
+  if (lastUpdate) {
+    const dataTime = moment(lastUpdate);
+    const now = moment();
+    const hoursOld = now.diff(dataTime, 'hours');
+    
+    if (hoursOld > maxAgeHours) {
+      console.log(`⚠️ ${dataType}: Data is stale (${hoursOld} hours old, max allowed: ${maxAgeHours}h)`);
+      return false;
+    }
+    console.log(`✅ ${dataType}: Data is fresh (${hoursOld} hours old)`);
+  } else {
+    // If no timestamp field, we can't verify freshness - log a warning but proceed
+    console.log(`⚠️ ${dataType}: No timestamp field found, unable to verify freshness - proceeding anyway`);
+  }
+
+  console.log(`✅ ${dataType}: Validated ${data.length} items`);
+  return true;
+}
 
 /**
  * Safely replace placeholders in content with data values
