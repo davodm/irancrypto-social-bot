@@ -196,6 +196,7 @@ async function testAPI() {
       console.log(`- Symbol: ${popularData[0].symbol}`);
       console.log(`- 24h Volume IRR: ${abbreviateNumber(popularData[0].irr?.volume || 0, 1, true)} IRR`);
       console.log(`- Price USD: $${numFormat(popularData[0].usd?.price || 0)}`);
+      console.log(`- Icon: ${popularData[0].icon}`);
     }
 
     // Test exchanges API
@@ -206,6 +207,7 @@ async function testAPI() {
       console.log("Sample exchange data:");
       console.log(`- Name: ${exchangesData[0].name_en}`);
       console.log(`- 24h Volume IRR: ${abbreviateNumber(exchangesData[0].volume || 0, 1, true)} IRR`);
+      console.log(`- Logo: ${exchangesData[0].logo}`);
     }
 
     // Test weekly coin recap API

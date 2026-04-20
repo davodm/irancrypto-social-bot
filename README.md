@@ -1,274 +1,264 @@
 # IranCrypto Market Social Media Bot
 
-The IranCrypto Market Social Media Bot is a powerful project that leverages Node.js and AWS Lambda to automate the generation of daily/weekly crypto market updates on social media platforms, including Twitter, Telegram and Instagram. It utilizes the IranCrypto API to fetch data on the most popular cryptocurrencies and then generates insightful content, complete with engaging English-language tweets and Instagram posts.
+Automates daily, weekly, and monthly crypto market updates across Twitter, Instagram, and Telegram using Node.js and AWS Lambda. Fetches data from the [IranCrypto Market API](https://irancrypto.market/api/), generates AI-powered content, and publishes on schedule.
 
-### Features
-* **Crypto Market Data:** Fetches daily and weekly rankings of top cryptocurrencies from the [IranCryptoMarket API](https://irancrypto.market/api/).
-* **Engaging Content Generation:** Uses AI models (OpenAI GPT or OpenRouter alternatives) to create compelling English-language tweets that discuss the performance, volume, and price changes of the top cryptocurrencies.
-* **Instagram Image Creation:** Generates images for Instagram posts using [Puppeteer+Chromium](https://github.com/puppeteer/puppeteer), with automated Chromium layer deployment for AWS Lambda.
-* **Twitter Integration:** Posts generated content on Twitter using the [Twitter API V2](https://www.npmjs.com/package/twitter-api-v2), with credentials obtained using a CLI tool.
-* **Instagram Posting:** Shares the generated images as both posts and stories on Instagram, utilizing the [Instagram private API](https://www.npmjs.com/package/instagram-private-api).
-* **Telegram Posting:** Shares the generated images on Telegram channel, utilizing the [Node.JS Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
-* **Serverless Execution:** Runs daily via AWS Lambda on a cron schedule, ensuring maintenance-free execution and scalability.
-* **AyreShare API:** In case of Instagram blockage, the project uses the [AyreShare API](https://www.ayrshare.com/) to bypass the checkpoint, you can set the API key on .env file to use it optionally.
-* **AI Provider Fallback:** Intelligent fallback system between OpenAI and OpenRouter APIs for reliable AI content generation.
-* **Error Tracking:** Integrated Sentry error tracking for monitoring and debugging production issues.
+## Features
 
+- **Crypto Market Data** — Fetches daily/weekly/monthly rankings from the IranCrypto Market API.
+- **AI Content Generation** — Uses OpenAI, OpenRouter, DeepSeek, Groq, or Together AI to write engaging tweets and Instagram captions with automatic provider fallback.
+- **Image Generation** — Generates Instagram-ready images from Handlebars templates using Puppeteer + Chromium on Lambda.
+- **Twitter** — Posts daily tweets about market trends and volume via [Twitter API V2](https://www.npmjs.com/package/twitter-api-v2).
+- **Instagram** — Weekly coin recaps and monthly exchange recaps via pluggable providers:
+  - [Ayrshare](https://www.ayrshare.com/) — social media scheduling API
+  - [Late](https://docs.getlate.dev/) — social media API with presigned media uploads
+- **Telegram** — Daily recap images posted to a channel via [Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
+- **Serverless** — Runs on AWS Lambda with cron scheduling, zero maintenance.
+- **Error Tracking** — Integrated Sentry support for production monitoring.
 
-## Flow
-- **Fetch Data**: Fetches data from the API at 23:59 Iran time (20:29 UTC).
-- **Schedule Posts**: Schedules posts for different social media platforms (Twitter, Instagram, Telegram) at specified times.
-- **Post Data**: Posts the scheduled data at the specified times with hourly poster cronjob.
-- **Supports Daily, Weekly, and Monthly Recaps**: Handles daily recaps, weekly recaps every Friday, and monthly recaps on the last day of the month.
+## Architecture
 
+```
+scheduler.js (cron: 23:59 Iran time)
+  └── Fetches data → schedules posts in DynamoDB
 
-## Quick Setup & Deployment
-
-### Step 1: Initial Setup
-1. **Clone and Install**: `git clone <repo> && cd irancrypto-twitter-bot && npm install`
-2. **Configure Environment**: Copy `.env` file and fill in your API keys and credentials
-3. **Deploy Chromium**: `npm run deploy:chromium` (auto-deploys compatible Chromium layers)
-4. **Deploy Application**: `npm run deploy` (deploys to AWS Lambda)
-
-### Step 2: Authentication Setup
-Twitter access token setup (not straightforward):
-1. **Developer Portal Setup:** Set up your developer portal on Twitter
-2. **Application Creation:** Create a new application within your developer portal
-3. **User Authentication Setup:** Set up user authentication with a callback URL
-4. **Twitter Auth CLI:** Run `npm run auth:twitter` to authenticate and generate tokens
-
-Instagram checkpoint bypass (if needed): `npm run auth:instagram`
-
-### Step 3: Environment Variables
-Configure your environment variables in `.env`. Required variables include API keys, access tokens, and credentials for Twitter, Instagram, Telegram, and AI services.
-
-```sh
-# ============================================
-# REQUIRED - Core Configuration
-# ============================================
-DYNAMODB_TABLE=<Your Dynamo DB table name>
-IRANCRYPTO_API_KEY=<Your API Key on IranCrypto>
-
-# ============================================
-# AI Configuration (REQUIRED: At least one provider API key)
-# ============================================
-AI_MODEL=gpt-4o-mini  # Optional: Model for all AI services (default: gpt-4o-mini)
-AI_PROVIDER=openai  # Optional: Primary provider (openai, openrouter, deepseek, groq, together)
-
-# Set at least ONE of the following AI provider API keys:
-OPENAI_API_KEY=<Your OpenAI API Key>  # Optional: Primary provider
-OPENAI_ORGANIZATION=<Your OpenAI Organization ID>  # Optional: Only for OpenAI
-OPENROUTER_API_KEY=<Your OpenRouter API Key>  # Optional: Alternative provider
-DEEPSEEK_API_KEY=<Your DeepSeek API Key>  # Optional: Additional provider
-GROQ_API_KEY=<Your Groq API Key>  # Optional: Additional provider
-TOGETHER_API_KEY=<Your Together AI API Key>  # Optional: Additional provider
-
-# ============================================
-# Twitter Configuration (REQUIRED for Twitter posting)
-# ============================================
-TWITTER_ACCESS_TOKEN=<Your twitter access token that you wont have it first>
-TWITTER_REFRESH_TOKEN=<Your twitter refresh token that you wont have it first>
-TWITTER_CLIENT_ID=<Your Twitter application client ID>
-TWITTER_CLIENT_SECRET=<Your Twitter application client Secret>
-TWITTER_CALLBACK_URL=https://randomurl/twitterbot/  # Should match your Twitter app config
-
-# ============================================
-# Instagram Configuration (REQUIRED for Instagram posting)
-# ============================================
-IG_USERNAME=<Your Instagram username>
-IG_PASSWORD=<Your Instagram password>
-IG_PROXY=<Your server proxy to use Instagram>  # Optional
-IG_PRELOGIN=false  # Optional: Set to true for prelogin simulation
-IG_STORE_SESSION=true  # Optional: Set to false to disable DynamoDB session storage
-AYRESHARE_API_KEY=<Your Ayreshare API Key>  # Optional: For bypassing Instagram checkpoints
-
-# ============================================
-# Telegram Configuration (REQUIRED for Telegram posting)
-# ============================================
-TELEGRAM_BOT_TOKEN=<Your Telegram bot token>
-TELEGRAM_CHANNEL_ID=<Your Telegram channel ID in number>
-
-# ============================================
-# Optional Configuration
-# ============================================
-SCHEDULE_TIMEZONE=Asia/Tehran  # Optional: Default timezone for scheduling (default: Asia/Tehran)
-SENTRY_DSN=<Your Sentry DSN>  # Optional: Sentry DSN for error tracking (leave empty to disable)
-
-# ============================================
-# Auto-managed by Chromium deployment script
-# ============================================
-CHROMIUM_LAYER_ARN=<Auto-generated by deploy:chromium>
-CHROMIUM_LAYER_ARN_ARM64=<Auto-generated by deploy:chromium>
-CHROMIUM_VERSION=<Auto-generated by deploy:chromium>
+poster.js (cron: every hour)
+  └── Reads scheduled posts → creates content → publishes
+        ├── src/content.js        → orchestrates tweet/instagram/telegram
+        ├── src/twitter.js        → Twitter API V2
+        ├── src/instagram.js      → provider router (INSTAGRAM_PROVIDER env var)
+        │     ├── src/providers/ayrshare.js   → Ayrshare API
+        │     └── src/providers/late.js       → Late API
+        ├── src/ai/               → AI content generation (multi-provider)
+        ├── src/html.js           → Puppeteer image generation
+        └── node-telegram-bot-api → Telegram channel posting
 ```
 
-**AI Provider Configuration:**
-- **OpenAI (Primary)**: Set `OPENAI_API_KEY` and optionally `OPENAI_ORGANIZATION`
-- **OpenRouter (Fallback)**: Set `OPENROUTER_API_KEY` for alternative AI models
-- **DeepSeek**: Set `DEEPSEEK_API_KEY` for DeepSeek models
-- **Groq**: Set `GROQ_API_KEY` for Groq models
-- **Together AI**: Set `TOGETHER_API_KEY` for Together AI models
-- **Configuration**:
-  - `AI_MODEL`: Single model used for all AI services (tweets, captions, etc.)
-  - `AI_PROVIDER`: Specify primary provider (openai, openrouter, deepseek, groq, together) - requires corresponding API key
-- **Automatic Fallback**: If primary provider fails or isn't set, automatically selects the best available provider (priority: specified primary > OpenAI > OpenRouter > DeepSeek > Groq > Together)
+### Instagram Provider System
+
+Instagram posting is handled by a pluggable provider system. Set `INSTAGRAM_PROVIDER` in your `.env` to choose which service handles publishing:
+
+| Provider | Env Var | Description |
+|----------|---------|-------------|
+| `ayrshare` (default) | `AYRSHARE_API_KEY` | Posts via [Ayrshare](https://www.ayrshare.com/) social media API |
+| `late` | `LATE_API_KEY` + `LATE_IG_ACCOUNT_ID` | Posts via [Late API](https://docs.getlate.dev/platforms/instagram) with presigned media upload |
+
+Both providers expose the same interface (`publishImage`, `publishVideo`, `publishStory`), so switching is just an env var change.
+
+### Scheduled Posts
+
+| Platform | Target | Schedule | Content |
+|----------|--------|----------|---------|
+| Telegram | Daily recap | Daily 9 AM | Top 10 coins by volume |
+| Twitter | Trends | Daily 9 AM | Top 3 coins tweet |
+| Twitter | Volume | Daily 10 AM | Total market volume tweet |
+| Instagram | Weekly coin | Friday 9 AM | Top 10 coins image + AI caption |
+| Instagram | Monthly exchange | Last day of month 9 AM | Top 5 exchanges image + AI caption |
+
+## Quick Start
+
+### 1. Install
+
+```bash
+git clone https://github.com/davodm/irancrypto-social-bot.git
+cd irancrypto-social-bot
+npm install
 ```
 
-5. **Twitter Authentication:** Use the provided CLI tool to authenticate and configure Twitter credentials. This tool will guide you through the authentication process and generate access and refresh tokens.
+### 2. Configure
 
-```sh
-$ npm run auth:twitter
-> Save Code verifierer below ->
-
-<....>
-
-Go to this link to auth your account ->
-
-<https://twitter.com/i/oauth2/authorize?>
-
-After all answer the prompts!
+```bash
+cp .env.example .env
+# Edit .env with your API keys and credentials
 ```
 
-6. **Token Storage:** The project uses DynamoDB to store and manage your Twitter tokens, ensuring that they are refreshed as needed.
+See [Environment Variables](#environment-variables) for details on each variable.
 
-Read more [technical details](https://github.com/PLhery/node-twitter-api-v2/blob/712ca82293c1b587638055537969dbec5a7bce40/doc/auth.md#user-wide-authentication-flow)  on the Twitter authentication flow used.
+### 3. Authenticate Twitter
 
-7. **Instagram Checkpoint Bypass:** In case of Instagram blockage, you can use the CLI tool to bypass the checkpoint.
+Twitter requires OAuth2 tokens generated via a CLI tool:
 
-```sh
-$ npm run auth:instagram
+1. Set up a [Twitter Developer](https://developer.twitter.com/) app with OAuth2 and a callback URL — the app **must be attached to a Project** in the Developer Console
+2. Set `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, and `TWITTER_CALLBACK_URL` in `.env`
+3. Run the auth tool:
+
+```bash
+npm run auth:twitter
 ```
 
-8. **Telegram Channel ID:** You can use [JSONDump Bot](https://t.me/JsonDumpBot) by forwarding a post from your channel to the bot to identify the channel id.
+4. Open the printed URL in your browser and authorize the app
+5. Paste the full redirect URL back into the terminal
 
-## Prerequisites
-- **Node.js**: Version 22.x or higher (recommended: 22.x LTS)
-- **Serverless Framework**: Version 4.x (install globally: `npm install -g serverless@latest`)
-- **AWS CLI**: Configured with appropriate credentials and permissions for Lambda layer deployment
+The script will exchange the code for tokens and automatically update `TWITTER_ACCESS_TOKEN` and `TWITTER_REFRESH_TOKEN` in your `.env` file.
 
-## Installation
-1. Clone Repo
-2. Run `npm install`
-3. **Install Serverless Framework globally**: `npm install -g serverless@latest`
-4. Create .env file and fill out the values as explained
-5. **Deploy Chromium Layer**: Run `npm run deploy:chromium` (or `npm run deploy:chromium:davod` for specific profile)
-6. **Test your AI configuration**: Run `npm test` to verify everything works
-7. **Functional Testing**: Run `npm run test:functional` to test AI caption generation, API connectivity, and image generation without posting
-7. Deploy lambda function through [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/deploying): `npm run deploy`
+Read more about the [Twitter OAuth2 flow](https://github.com/PLhery/node-twitter-api-v2/blob/712ca82293c1b587638055537969dbec5a7bce40/doc/auth.md#user-wide-authentication-flow).
 
-Whole serverless configuration will create DynamoDB table, attach the needed permissions and set the cronjob.
+### 4. Connect Instagram
 
-## Automated Chromium Layer Deployment
+Depending on your chosen provider:
 
-The project automatically deploys Chromium layers for Puppeteer using an intelligent version matching system:
+**Ayrshare** — Create an account at [ayrshare.com](https://www.ayrshare.com/), connect your Instagram Business/Creator account, and copy your API key to `AYRSHARE_API_KEY`.
 
-### Quick Setup
+**Late** — Create an account at [getlate.dev](https://getlate.dev/), connect your Instagram Business/Creator account via OAuth, get your account ID from the dashboard, then set `LATE_API_KEY` and `LATE_IG_ACCOUNT_ID`.
+
+### 5. Set up Telegram
+
+1. Create a bot via [@BotFather](https://t.me/BotFather) and copy the token to `TELEGRAM_BOT_TOKEN`
+2. Add the bot as admin to your channel
+3. Get your channel ID using [@JsonDumpBot](https://t.me/JsonDumpBot) (forward a channel post to it) and set `TELEGRAM_CHANNEL_ID`
+
+### 6. Deploy
+
+```bash
+# Deploy Chromium layer for image generation
+npm run deploy:chromium
+
+# Deploy the application
+npm run deploy
+```
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+
+### Core (Required)
+
+| Variable | Description |
+|----------|-------------|
+| `DYNAMODB_TABLE` | DynamoDB table name |
+| `IRANCRYPTO_API_KEY` | IranCrypto Market API key |
+
+### AI (At least one provider key required)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AI_MODEL` | `gpt-4o-mini` | Model name for all AI generation |
+| `AI_PROVIDER` | *(auto-detect)* | Primary provider: `openai`, `openrouter`, `deepseek`, `groq`, `together` |
+| `OPENAI_API_KEY` | | OpenAI API key |
+| `OPENAI_ORGANIZATION` | | OpenAI organization ID (optional) |
+| `OPENROUTER_API_KEY` | | OpenRouter API key |
+| `DEEPSEEK_API_KEY` | | DeepSeek API key |
+| `GROQ_API_KEY` | | Groq API key |
+| `TOGETHER_API_KEY` | | Together AI API key |
+
+If `AI_PROVIDER` is not set, the system auto-selects the best available provider (priority: OpenAI > OpenRouter > DeepSeek > Groq > Together).
+
+### Twitter
+
+| Variable | Description |
+|----------|-------------|
+| `TWITTER_ACCESS_TOKEN` | OAuth2 access token (generated via `npm run auth:twitter`) |
+| `TWITTER_REFRESH_TOKEN` | OAuth2 refresh token (generated via `npm run auth:twitter`) |
+| `TWITTER_CLIENT_ID` | Twitter app client ID |
+| `TWITTER_CLIENT_SECRET` | Twitter app client secret |
+| `TWITTER_CALLBACK_URL` | OAuth2 callback URL (must match your Twitter app config) |
+
+### Instagram
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `INSTAGRAM_PROVIDER` | `ayrshare` | Provider to use: `ayrshare` or `late` |
+| `AYRSHARE_API_KEY` | | Ayrshare API key (required when provider is `ayrshare`) |
+| `LATE_API_KEY` | | Late API key (required when provider is `late`) |
+| `LATE_IG_ACCOUNT_ID` | | Late Instagram account ID (required when provider is `late`) |
+
+### Telegram
+
+| Variable | Description |
+|----------|-------------|
+| `TELEGRAM_BOT_TOKEN` | Telegram bot token from @BotFather |
+| `TELEGRAM_CHANNEL_ID` | Target channel ID (numeric, e.g. `-1001234567890`) |
+
+### Optional
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SCHEDULE_TIMEZONE` | `Asia/Tehran` | Timezone for post scheduling |
+| `SENTRY_DSN` | | Sentry DSN for error tracking |
+
+### Auto-managed (do not set manually)
+
+| Variable | Description |
+|----------|-------------|
+| `CHROMIUM_LAYER_ARN` | Chromium Lambda layer ARN (set by `deploy:chromium` script) |
+| `CHROMIUM_LAYER_ARN_ARM64` | Chromium ARM64 layer ARN (set by `deploy:chromium` script) |
+| `CHROMIUM_VERSION` | Deployed Chromium version (set by `deploy:chromium` script) |
+
+## Chromium Layer Deployment
+
+The project automatically deploys Chromium layers for Puppeteer with version auto-detection:
+
 ```bash
 # Auto-detect and deploy compatible Chromium version
 npm run deploy:chromium
 
-# Or for specific AWS profile
+# With a specific AWS profile
 npm run deploy:chromium:davod
-```
 
-### What It Does
-- **Auto-detection**: Detects your installed Puppeteer version and finds the compatible Chromium version
-- **Web-first lookup**: First tries to fetch version mapping from [pptr.dev/supported-browsers](https://pptr.dev/supported-browsers)
-- **Fallback mapping**: Uses hardcoded compatibility mapping if web lookup fails
-- **Multi-architecture**: Deploys both x64 and arm64 layers automatically
-- **Cost optimization**: Cleans up S3 files after layer creation (layers are free, S3 storage is not)
-- **Environment management**: Updates your `.env` file with layer ARNs
-
-### Manual Control
-```bash
-# Force specific Chromium version
+# Force a specific Chromium version
 ./scripts/deploy-chromium-layer.sh --chromium 143.0.0
 
-# Use specific AWS profile and region
+# Custom profile and region
 ./scripts/deploy-chromium-layer.sh --profile production --region us-east-1
 ```
 
-The script will automatically update your `.env` file with the deployed layer ARNs, making deployment seamless.
+The script auto-detects your Puppeteer version, fetches the compatible Chromium build, deploys both x64 and arm64 layers, cleans up S3 artifacts, and updates your `.env` with the layer ARNs.
 
-## Environment Variables & Serverless Deployment
+## Serverless Deployment
 
-**Important**: Environment variables are set **per Lambda function** in `serverless.yml`, not globally. Each function only receives the environment variables it actually needs:
+Environment variables are set **per Lambda function** in `serverless.yml`:
 
-- **scheduler-midnight**: IranCrypto API access, DynamoDB, and scheduling configuration
-- **poster**: All environment variables (AI, Twitter, Instagram, Telegram, DynamoDB, IranCrypto API)
+- **scheduler-midnight** — Only needs IranCrypto API, DynamoDB, and scheduling config
+- **poster** — Needs all variables (AI, Twitter, Instagram, Telegram, etc.)
 
-**Auto-managed Variables**: Chromium layer ARNs are automatically managed by the deployment script. Don't set these manually:
+### Local Deployment
 
-- `CHROMIUM_LAYER_ARN`: Chromium layer ARN (x64, auto-generated)
-- `CHROMIUM_LAYER_ARN_ARM64`: Chromium ARM64 layer ARN (auto-generated)
-- `CHROMIUM_VERSION`: Deployed Chromium version (auto-generated)
+The Serverless Framework loads variables from `.env` via `useDotenv: true`. Missing optional variables default to empty strings and won't cause failures.
 
-**Optional Variables**: The `serverless.yml` configuration uses default empty strings for optional variables, so you don't need to set all AI provider keys, Instagram proxy, or other optional settings. Only set the variables you actually need:
+### CI/CD Deployment (GitHub Actions)
 
-- **AI Providers**: Set at least one AI provider API key (OPENAI_API_KEY, OPENROUTER_API_KEY, etc.)
-- **Social Media Platforms**: Only set variables for platforms you want to use (Twitter, Instagram, Telegram)
-- **Optional Features**: IG_PROXY, AYRESHARE_API_KEY, etc. can be omitted if not needed
-- **Error Tracking**: Set SENTRY_DNS to enable Sentry error tracking across all workers (scheduler and content processors)
+Pushing to `main` triggers the CI/CD pipeline in `.github/workflows/deploy.yml`. Since `.env` is not committed, all environment variables must be configured in **GitHub Settings > Secrets and variables > Actions**, under the `production` environment.
 
-The Serverless Framework will automatically load variables from `.env` during deployment and set them appropriately for each function. Missing optional variables will be set to empty strings, which won't cause deployment failures.
+**Secrets** (sensitive values):
 
-## Functionality
-- Twitter: Share two daily tweets about total market transactions and top 3 cryptocurrencies.
-- Instagram: Share a weekly post about 10 most traded cryptocurrencies and a monthly post about trading value of 10 crypto exchanges.
-- Telegram: Share a daily post about 10 most traded cryptocurrencies.
+`IRANCRYPTO_API_KEY`, `OPENAI_API_KEY`, `OPENAI_ORGANIZATION`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `TWITTER_ACCESS_TOKEN`, `TWITTER_REFRESH_TOKEN`, `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, `AYRSHARE_API_KEY`, `LATE_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `SENTRY_DSN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
-### Cronjob
-Cronjob is set to run specificly for each controller:
-- Scheduler: 23:59 Iran time (20:29 UTC)
-- Poster: Every hour
+**Variables** (non-sensitive config):
 
-The `serverless.yml` file configures the scheduling of Lambda functions using AWS CloudWatch Events.
+`DYNAMODB_TABLE`, `CHROMIUM_LAYER_ARN`, `AI_MODEL`, `AI_PROVIDER`, `TWITTER_CALLBACK_URL`, `INSTAGRAM_PROVIDER`, `LATE_IG_ACCOUNT_ID`
 
-## Functional Testing
+## Testing
 
-The project includes a comprehensive functional test suite that allows you to test all major components without posting to social media platforms:
+### Unit Tests
 
 ```bash
-# Test AI caption generation for Instagram/Twitter
-node tests/test.js caption
-
-# Test API endpoints and data retrieval
-node tests/test.js api
-
-# Test image generation (saves images to writable/ directory)
-node tests/test.js image
-
-# Run all tests
-node tests/test.js all
-
-# Show help
-node tests/test.js help
+npm test
 ```
 
-Or use the npm script:
+### Functional Tests
+
+Tests AI generation, API connectivity, and image creation without posting to social media:
+
 ```bash
 npm run test:functional
+
+# Or run specific test suites:
+node -r dotenv/config test.js caption   # AI caption generation
+node -r dotenv/config test.js api       # API endpoints
+node -r dotenv/config test.js image     # Image generation
+node -r dotenv/config test.js all       # Everything
+node -r dotenv/config test.js help      # Show help
 ```
 
-**What gets tested:**
-- AI-powered caption generation for different content types
-- API connectivity and data validation for popular coins, exchanges, and recap data
-- Image generation for daily recaps, weekly recaps, and monthly exchange reports
-- Data processing and formatting functions
+## Prerequisites
 
-**Note:** These tests generate content and images but do NOT post to social media platforms, making them safe for development and testing.
+- **Node.js** >= 20.x (recommended: 22.x LTS)
+- **Serverless Framework** 4.x (`npm install -g serverless@latest`)
+- **AWS CLI** configured with Lambda/DynamoDB/S3 permissions
 
-## Improvements and Testing
-
-- **Automated Chromium Deployment**: Intelligent Chromium layer deployment with version auto-detection and multi-architecture support
-- **AI Provider Fallback**: Implemented intelligent fallback between OpenAI and OpenRouter APIs
-- **Comprehensive Testing**: Full test suite with Node.js built-in test runner (17/17 tests passing)
-- **Functional Testing**: Advanced test runner for testing AI caption generation, API functionality, and image generation without posting
-- **Production Ready**: Lightweight, production-ready AI helper with graceful error handling
-- **Environment Management**: Proper .env loading and configuration management
-- **Cost Optimization**: Automatic S3 cleanup and efficient layer management
 ## Contributing
-Pull requests are welcome! Feel free to open issues for any improvements or bugs.
+
+Pull requests are welcome! Feel free to open issues for improvements or bugs.
 
 ## License
-This project is open source and available under the [MIT License](https://opensource.org/licenses/MIT).
+
+[MIT License](https://opensource.org/licenses/MIT)

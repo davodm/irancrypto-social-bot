@@ -218,6 +218,8 @@ function buildInstagramPrompt(type, data, totalVol) {
       volume: abbreviateNumber(item.irr?.volume || 0, 1, true),
     }));
 
+    if (top5.length === 0) return "";
+
     const leader = top5[0];
     const leaderShare = totalVol > 0 ? Math.round((data[0]?.irr?.volume || 0) / totalVol * 100) : 0;
 
@@ -243,6 +245,8 @@ Make it insightful and engaging. Mention the week dates, highlight the leader, s
       name: item.name_en,
       volume: abbreviateNumber(item.volume || 0, 1, true),
     }));
+
+    if (top5.length === 0) return "";
 
     const leader = top5[0];
     const leaderShare = totalVol > 0 ? Math.round((data[0]?.volume || 0) / totalVol * 100) : 0;
@@ -274,13 +278,17 @@ Make it insightful and engaging. Mention the month, highlight the competition, s
 export async function makeInstagram(target, data) {
   try {
     if (target === "weekly-coin") {
-      // Total trade volume - use BigInt to avoid precision issues with large numbers
-      const totalVol = Number(data
-        .filter((item) => item.has_iran)
-        .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n));
-
       // Filter Data
       const filteredData = data.filter((item) => item.has_iran);
+
+      if (filteredData.length === 0) {
+        console.warn("No data with has_iran flag for weekly-coin Instagram post");
+        return;
+      }
+
+      // Total trade volume - use BigInt to avoid precision issues with large numbers
+      const totalVol = Number(filteredData
+        .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n));
       const tokens = filteredData
         .map((item) => ({
           name: item.name_en,
@@ -319,6 +327,11 @@ export async function makeInstagram(target, data) {
       await publishImage(image, caption);
       console.log("Weekly coin recap published on Instagram");
     } else if (target === "monthly-exchange") {
+      if (!data || data.length === 0) {
+        console.warn("No data for monthly-exchange Instagram post");
+        return;
+      }
+
       // Total Trade Volume - use BigInt to avoid precision issues with large numbers
       const totalVol = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.volume || 0)), 0n));
 

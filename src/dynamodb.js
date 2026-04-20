@@ -67,52 +67,6 @@ export async function updateTwitter($data) {
 }
 
 /**
- * Fetch Instagram data from DynamoDB
- * @returns {object}
- */
-export async function getInstagram() {
-  //Send Requests
-  try {
-    const result = await docClient.send(
-      new GetCommand({
-        TableName: getENV("DYNAMODB_TABLE"),
-        Key: {
-          id: "instagram",
-        },
-      })
-    );
-    return result.Item ?? false;
-  } catch (error) {
-    console.error("Error fetching data from DynamoDB:", error);
-    throw error; // Rethrow the error to be handled by the caller
-  }
-}
-
-/**
- * Update Instagram data on DynamoDB
- * @param {object} $data
- * @returns {Promise<}
- */
-export async function updateInstagram($data) {
-  //Send Request
-  try {
-    return await docClient.send(
-      new PutCommand({
-        TableName: getENV("DYNAMODB_TABLE"),
-        Item: {
-          ...$data,
-          id: "instagram",
-          timestamp: Date.now(),
-        },
-      })
-    );
-  } catch (error) {
-    console.error("Error putting data to DynamoDB:", error);
-    throw error; // Rethrow the error to be handled by the caller
-  }
-}
-
-/**
  * Schedule a post with a specified timestamp
  * @param {string} platform "twitter", "instagram", etc.
  * @param {object} data Data to be posted
