@@ -47,7 +47,36 @@ async function request(method, params = {}) {
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json();
+  const body = await response.json();
+  return normalizeListResponse(body, method);
+}
+
+/**
+ * Ensure API responses are arrays (some endpoints return { data: [] }).
+ * @param {unknown} body
+ * @param {string} method
+ * @returns {Array}
+ */
+function normalizeListResponse(body, method) {
+  if (Array.isArray(body)) {
+    if (body.length === 0 && method.startsWith("recap")) {
+      console.warn(`IranCrypto API: ${method} returned an empty list`);
+    }
+    return body;
+  }
+
+  if (body && typeof body === "object") {
+    const nested = body.data ?? body.items ?? body.results;
+    if (Array.isArray(nested)) {
+      if (nested.length === 0 && method.startsWith("recap")) {
+        console.warn(`IranCrypto API: ${method} returned an empty list (wrapped response)`);
+      }
+      return nested;
+    }
+  }
+
+  console.error(`IranCrypto API: unexpected response shape for ${method}`, body);
+  return [];
 }
 
 /**

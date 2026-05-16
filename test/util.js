@@ -8,9 +8,24 @@ import {
   formatContent,
   validateArrayLength,
   safeArrayAccess,
+  isDataValid,
 } from "../src/util.js";
 
 describe("Utility Functions", () => {
+  describe("isDataValid", () => {
+    test("should reject empty array", () => {
+      assert.strictEqual(isDataValid([], "Test"), false);
+    });
+
+    test("should accept non-empty array", () => {
+      assert.strictEqual(isDataValid([{ name_en: "BTC" }], "Test"), true);
+    });
+
+    test("should reject null", () => {
+      assert.strictEqual(isDataValid(null, "Test"), false);
+    });
+  });
+
   describe("replacePlaceholders", () => {
     test("should replace single placeholder", () => {
       const result = replacePlaceholders("Total: %1% IRR", { "1": "100M" });

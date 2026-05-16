@@ -1,20 +1,27 @@
 // You can also use CommonJS `require('@sentry/node')` instead of `import`
 import * as Sentry from "@sentry/node";
-import { getENV } from "./env.js";
 
-// Initialize Sentry only if SENTRY_DSN is provided and not empty
-const sentryDsn = getENV("SENTRY_DSN", "");
+const sentryDsn = (process.env.SENTRY_DSN || "").trim();
 
-if (sentryDsn && sentryDsn.trim() !== "") {
+if (sentryDsn) {
   Sentry.init({
     dsn: sentryDsn,
 
     // Performance Monitoring
-    tracesSampleRate: 0
+    tracesSampleRate: 0,
   });
-  console.log("Sentry initialized successfully");
-} else {
-  console.log("Sentry DSN not provided, error tracking disabled");
+}
+
+/** Log Sentry on/off once per execution environment, from inside the handler (valid RequestId in CloudWatch). */
+let sentryBootstrapLogged = false;
+export function logLambdaBootstrap() {
+  if (sentryBootstrapLogged) return;
+  sentryBootstrapLogged = true;
+  if (sentryDsn) {
+    console.log("Sentry initialized successfully");
+  } else {
+    console.log("Sentry DSN not provided, error tracking disabled");
+  }
 }
 
 /**
@@ -23,15 +30,14 @@ if (sentryDsn && sentryDsn.trim() !== "") {
  * @param {Object} context - Additional context to include
  */
 export function captureError(error, context = {}) {
-  if (sentryDsn && sentryDsn.trim() !== "") {
+  if (sentryDsn) {
     Sentry.captureException(error, {
       tags: context.tags || {},
       extra: context.extra || {},
       user: context.user || {},
     });
-  } else {
-    console.error("Error occurred but Sentry not configured:", error.message);
   }
+  // When Sentry is off, rely on caller / Lambda runtime logging (avoid duplicate ERROR lines).
 }
 
 export function captureException(error, context = {}) {
@@ -45,7 +51,7 @@ export function captureException(error, context = {}) {
  * @param {Object} context - Additional context to include
  */
 export function captureMessage(message, level = "info", context = {}) {
-  if (sentryDsn && sentryDsn.trim() !== "") {
+  if (sentryDsn) {
     Sentry.captureMessage(message, level, {
       tags: context.tags || {},
       extra: context.extra || {},
@@ -62,11 +68,11 @@ export function withSentry(handler) {
     } catch (error) {
       captureError(error, {
         tags: {
-          handler: handler.name || 'anonymous'
+          handler: handler.name || "anonymous",
         },
         extra: {
-          args: args.length > 0 ? JSON.stringify(args) : undefined
-        }
+          args: args.length > 0 ? JSON.stringify(args) : undefined,
+        },
       });
       throw error;
     }

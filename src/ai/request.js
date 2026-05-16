@@ -1,6 +1,14 @@
 import OpenAI from "openai";
 import { getENV, isENV } from "../env.js";
 
+function isAiVerboseLogging() {
+  return (
+    process.env.AI_DEBUG === "1" ||
+    process.env.DEBUG_AI === "1" ||
+    isENV("development")
+  );
+}
+
 // Supported AI providers
 const PROVIDERS = {
   OPENAI: "openai",
@@ -78,9 +86,6 @@ function getAIConfig() {
 // Client cache for different providers
 const clientCache = new Map();
 let currentProvider = null;
-
-// AI module loaded (configuration will be lazy-loaded when needed)
-console.log("🤖 AI Module loaded (lazy configuration)");
 
 /**
  * Validate that if a primary provider is set, its API key exists
@@ -234,17 +239,21 @@ export async function ask(messages, options = {}) {
     console.log(`🤖 Making AI request to ${currentProvider} with model ${config.model}`);
     const result = await client.chat.completions.create(config);
 
-    // Debug: Log the raw response structure
-    console.log("🤖 AI Response received:");
-    console.log("  Result exists:", !!result);
-    console.log("  Choices exists:", !!result?.choices);
-    console.log("  Choices length:", result?.choices?.length || 0);
-    if (result?.choices?.[0]) {
-      console.log("  First choice exists:", !!result.choices[0]);
-      console.log("  Message exists:", !!result.choices[0].message);
-      console.log("  Content exists:", !!result.choices[0].message?.content);
-      console.log("  Content length:", result.choices[0].message?.content?.length || 0);
-      console.log("  Content preview:", result.choices[0].message?.content?.substring(0, 100) || "EMPTY");
+    if (isAiVerboseLogging()) {
+      console.log("🤖 AI Response received:");
+      console.log("  Result exists:", !!result);
+      console.log("  Choices exists:", !!result?.choices);
+      console.log("  Choices length:", result?.choices?.length || 0);
+      if (result?.choices?.[0]) {
+        console.log("  First choice exists:", !!result.choices[0]);
+        console.log("  Message exists:", !!result.choices[0].message);
+        console.log("  Content exists:", !!result.choices[0].message?.content);
+        console.log("  Content length:", result.choices[0].message?.content?.length || 0);
+        console.log("  Content preview:", result.choices[0].message?.content?.substring(0, 100) || "EMPTY");
+      }
+    } else {
+      const len = result?.choices?.[0]?.message?.content?.length ?? 0;
+      console.log(`🤖 AI response OK (${len} chars)`);
     }
 
     // Validate response
@@ -269,14 +278,20 @@ export async function ask(messages, options = {}) {
     }
 
     if (!firstChoice.message || !firstChoice.message.content || firstChoice.message.content.trim().length === 0) {
-      console.error("🤖 Content validation failed:");
-      console.error("  firstChoice:", firstChoice);
-      console.error("  firstChoice.message:", firstChoice.message);
-      console.error("  firstChoice.message.content:", firstChoice.message?.content);
+      if (isAiVerboseLogging()) {
+        console.error("🤖 Content validation failed:");
+        console.error("  firstChoice:", firstChoice);
+        console.error("  firstChoice.message:", firstChoice.message);
+        console.error("  firstChoice.message.content:", firstChoice.message?.content);
+      } else {
+        console.error("🤖 Content validation failed (empty assistant content)");
+      }
 
       // Provide more helpful error message for reasoning models
       if (firstChoice.message?.reasoning) {
-        console.error("  Note: Model has reasoning output but no content - likely a reasoning model that exhausted tokens");
+        if (isAiVerboseLogging()) {
+          console.error("  Note: Model has reasoning output but no content - likely a reasoning model that exhausted tokens");
+        }
         throw new Error("AI model exhausted tokens on reasoning before generating content. Try a non-reasoning model or increase maxTokens significantly.");
       }
 
@@ -288,15 +303,18 @@ export async function ask(messages, options = {}) {
     // Enhanced error handling with provider context
     const providerInfo = currentProvider ? ` (${currentProvider})` : '';
 
-    // Log detailed error information for debugging
-    console.error(`🤖 AI Error Details${providerInfo}:`);
-    console.error(`  Status: ${error.status || 'unknown'}`);
-    console.error(`  Code: ${error.code || 'unknown'}`);
-    console.error(`  Type: ${error.type || 'unknown'}`);
-    console.error(`  Message: ${error.message || 'unknown'}`);
-    if (error.response) {
-      console.error(`  Response Status: ${error.response.status}`);
-      console.error(`  Response Data:`, error.response.data);
+    if (isAiVerboseLogging()) {
+      console.error(`🤖 AI Error Details${providerInfo}:`);
+      console.error(`  Status: ${error.status || 'unknown'}`);
+      console.error(`  Code: ${error.code || 'unknown'}`);
+      console.error(`  Type: ${error.type || 'unknown'}`);
+      console.error(`  Message: ${error.message || 'unknown'}`);
+      if (error.response) {
+        console.error(`  Response Status: ${error.response.status}`);
+        console.error(`  Response Data:`, error.response.data);
+      }
+    } else {
+      console.error(`🤖 AI error${providerInfo}: ${error.message || "unknown"}`);
     }
 
     if (error.code === "insufficient_quota") {

@@ -218,6 +218,8 @@ The Serverless Framework loads variables from `.env` via `useDotenv: true`. Miss
 
 Pushing to `main` triggers the CI/CD pipeline in `.github/workflows/deploy.yml`. Since `.env` is not committed, all environment variables must be configured in **GitHub Settings > Secrets and variables > Actions**, under the `production` environment.
 
+Set `SENTRY_DSN` to enable Sentry error tracking across scheduler and poster workers.
+
 **Secrets** (sensitive values):
 
 `IRANCRYPTO_API_KEY`, `OPENAI_API_KEY`, `OPENAI_ORGANIZATION`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `TWITTER_ACCESS_TOKEN`, `TWITTER_REFRESH_TOKEN`, `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, `AYRSHARE_API_KEY`, `LATE_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `SENTRY_DSN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`

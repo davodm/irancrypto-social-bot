@@ -68,9 +68,12 @@ async function post(file, caption, cover = null, story = false) {
 
   const result = await client.post(params);
 
+  const postUrl = result.postIds[0].postUrl;
+
   return {
     id: result.postIds[0].id,
-    code: extractPostCode(result.postIds[0].postUrl),
+    code: extractPostCode(postUrl),
+    url: postUrl,
   };
 }
 

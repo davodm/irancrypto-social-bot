@@ -1,14 +1,13 @@
 import './src/sentry.js'; // Initialize Sentry early
-import { getPopular, getRecap } from './src/api.js';
+import { getPopular, getRecap, getExchanges } from './src/api.js';
 import { schedulePost } from './src/dynamodb.js';
 import moment from 'moment-timezone';
 import { getENV } from './src/env.js';
-import { captureError } from './src/sentry.js';
+import { captureError, logLambdaBootstrap } from './src/sentry.js';
 import { isDataValid } from './src/util.js';
 
 const SCHEDULE_TIMEZONE = getENV("SCHEDULE_TIMEZONE","Asia/Tehran");
 
-// Daily coin recap for Telegram -> 9 AM tomorrow
 async function scheduleDailyRecap() {
   const data = await getPopular();
   if (!isDataValid(data, 'Daily Recap (Telegram)')) {
@@ -17,10 +16,9 @@ async function scheduleDailyRecap() {
   }
   const scheduleTime = getNextScheduleTime(9);
   await schedulePost('telegram', 'dailyrecap', data, scheduleTime.unix());
-  console.log('Daily coin recap scheduled for tomorrow on Telegram');
+  console.log(`Daily coin recap scheduled for tomorrow on Telegram at ${scheduleTime.format()}`);
 }
 
-// Daily Popular coins for twitter -> 9-10 AM tomorrow
 async function scheduleDailyPopular() {
   const data = await getPopular();
   if (!isDataValid(data, 'Daily Popular (Twitter)')) {
@@ -30,31 +28,49 @@ async function scheduleDailyPopular() {
   const scheduleTime = getNextScheduleTime(9);
   await schedulePost('twitter', 'trends', data, scheduleTime.unix());
   await schedulePost('twitter', 'vol', data, scheduleTime.add(1, 'hour').unix());
-  console.log('Daily popular coins scheduled for tomorrow on Twitter');
+  console.log(`Daily popular coins scheduled for tomorrow on Twitter at ${scheduleTime.format()}`);
 }
 
-// Weekly coin recap for Instagram -> 9 AM tomorrow
 async function scheduleWeeklyRecap() {
-  const data = await getRecap("coin", "weekly");
+  let data = await getRecap("coin", "weekly");
+  let source = "recap/coin/weekly";
+
   if (!isDataValid(data, 'Weekly Recap (Instagram)')) {
-    console.log('❌ Skipping weekly recap scheduling for Instagram - invalid or stale data');
-    return;
+    console.log('⚠️ Weekly recap API empty — falling back to popular coins (24h)');
+    data = await getPopular();
+    source = "popular (fallback)";
+    if (!isDataValid(data, 'Weekly Recap fallback (Popular)')) {
+      console.log('❌ Skipping weekly recap scheduling for Instagram - no valid data');
+      return;
+    }
   }
+
   const scheduleTime = getNextScheduleTime(9);
   await schedulePost('instagram', 'weekly-coin', data, scheduleTime.unix());
-  console.log('Weekly coin recap scheduled for tomorrow on Instagram');
+  console.log(
+    `Weekly coin recap scheduled for tomorrow on Instagram at ${scheduleTime.format()} (source: ${source}, ${data.length} items)`
+  );
 }
 
-// Monthly exchange recap for Instagram -> 9 AM tomorrow
 async function scheduleMonthlyRecap() {
-  const data = await getRecap("exchange", "monthly");
+  let data = await getRecap("exchange", "monthly");
+  let source = "recap/exchange/monthly";
+
   if (!isDataValid(data, 'Monthly Exchange Recap (Instagram)')) {
-    console.log('❌ Skipping monthly recap scheduling for Instagram - invalid or stale data');
-    return;
+    console.log('⚠️ Monthly exchange recap API empty — falling back to exchanges (24h)');
+    data = await getExchanges();
+    source = "exchanges (fallback)";
+    if (!isDataValid(data, 'Monthly Exchange Recap fallback (Exchanges)')) {
+      console.log('❌ Skipping monthly recap scheduling for Instagram - no valid data');
+      return;
+    }
   }
+
   const scheduleTime = getNextScheduleTime(9);
   await schedulePost('instagram', 'monthly-exchange', data, scheduleTime.unix());
-  console.log('Monthly exchange recap scheduled for tomorrow on Instagram');
+  console.log(
+    `Monthly exchange recap scheduled for tomorrow on Instagram at ${scheduleTime.format()} (source: ${source}, ${data.length} items)`
+  );
 }
 
 function getNextScheduleTime(hour) {
@@ -71,14 +87,13 @@ function isTodayLastDayOfMonth(timezone) {
 }
 
 export const midnight = async (event) => {
+  logLambdaBootstrap();
   try {
     await scheduleDailyRecap();
     await scheduleDailyPopular();
-    // Only Fridays
     if (moment().tz(SCHEDULE_TIMEZONE).day() === 5) {
       await scheduleWeeklyRecap();
     }
-    // Only last day of month
     if (isTodayLastDayOfMonth(SCHEDULE_TIMEZONE)) {
       await scheduleMonthlyRecap();
     }
@@ -97,6 +112,6 @@ export const midnight = async (event) => {
         event: event
       }
     });
-    throw error; // Re-throw to maintain Lambda error handling
+    throw error;
   }
 };

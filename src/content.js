@@ -4,9 +4,9 @@ import { writeTweet, writeCaption } from "./ai/index.js";
 import { abbreviateNumber, numFormat } from "./number.js";
 import { createImageFromTemplate, getRandomTheme } from "./html.js";
 import { getENV } from "./env.js";
+import { postSuccess, postSkipped } from "./post-result.js";
 import TelegramBot from "node-telegram-bot-api";
 import moment from "moment";
-import { captureError } from "./sentry.js";
 
 const bot = new TelegramBot(getENV("TELEGRAM_BOT_TOKEN"));
 
@@ -66,44 +66,34 @@ Keep it fresh and different from typical volume announcements!`;
  * @param {Array} data - Popular items data
  */
 export async function makeTweet(target, data) {
-  try {
-    // Calculate total volume - use BigInt to avoid precision issues with large numbers
-    const totalVolIRR = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.irr?.volume || 0)), 0n));
+  const platform = "twitter";
 
-    // Build dynamic prompt with real data and date context
-    const prompt = buildTweetPrompt(target, data, totalVolIRR);
+  // Calculate total volume - use BigInt to avoid precision issues with large numbers
+  const totalVolIRR = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.irr?.volume || 0)), 0n));
 
-    if (!prompt) {
-      console.warn(`Unknown tweet target: ${target}`);
-      return;
-    }
+  // Build dynamic prompt with real data and date context
+  const prompt = buildTweetPrompt(target, data, totalVolIRR);
 
-    // Generate tweet from AI with real data
-    const phrase = await writeTweet(prompt, {
-      lineBreak: TWEET_LINE_BREAK,
-    });
-
-    if (!phrase) {
-      console.warn(`Failed to generate tweet for target: ${target}`);
-      return;
-    }
-
-    // Send tweet (no placeholder replacement needed - AI has real data)
-    console.log("Tweeting...", phrase);
-    await tweet(phrase);
-  } catch (error) {
-    captureError(error, {
-      tags: {
-        worker: 'content',
-        function: 'makeTweet',
-        target: target
-      },
-      extra: {
-        dataLength: data?.length || 0
-      }
-    });
-    throw error; // Re-throw to maintain Lambda error handling
+  if (!prompt) {
+    return postSkipped(platform, target, `unknown target "${target}"`);
   }
+
+  const phrase = await writeTweet(prompt, {
+    lineBreak: TWEET_LINE_BREAK,
+  });
+
+  if (!phrase) {
+    return postSkipped(platform, target, "AI returned empty tweet text");
+  }
+
+  const result = await tweet(phrase);
+
+  return postSuccess(platform, target, {
+    tweetId: result?.data?.id,
+    chars: phrase.length,
+    preview: phrase.slice(0, 120),
+    totalVolumeIrr: abbreviateNumber(totalVolIRR, 1, true),
+  });
 }
 
 /**
@@ -112,49 +102,54 @@ export async function makeTweet(target, data) {
  * @param {Array} data - Data for the content
  */
 export async function makeTelegram(target, data) {
-  try {
-    // Total Trade Volume - use BigInt to avoid precision issues with large numbers
-    const totalVol = data
-      .filter((item) => item.has_iran)
-      .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n);
+  const platform = "telegram";
 
-    // Filter Data
-    const tokens = data
-      .filter((item) => item.has_iran)
-      .map((item) => ({
-        name: item.name_en,
-        price: "$" + numFormat(item.usd.price),
-        volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-        icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
-      }))
-      .slice(0, 10);
+  if (!data?.length) {
+    return postSkipped(platform, target, "no market data");
+  }
 
-    // Yesterday date
-    const date = moment().subtract(1, "day").format("YYYY-MM-DD");
+  // Total Trade Volume - use BigInt to avoid precision issues with large numbers
+  const totalVol = data
+    .filter((item) => item.has_iran)
+    .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n);
 
-    // Create Image
-    const image = await createImageFromTemplate(
-      "table-coin-" + getRandomTheme(),
-      {
-        tokens,
-        headers: ["Token", "Average Price", "Traded Volume"],
-        title: "Daily Recap",
-        subtitle: `Total traded volume (24h): ${abbreviateNumber(
-          Number(totalVol),
-          0,
-          true
-        )} IRR`,
-        lastUpdate: date,
-      },
-      "daily-coins.jpg"
-    );
+  // Filter Data
+  const tokens = data
+    .filter((item) => item.has_iran)
+    .map((item) => ({
+      name: item.name_en,
+      price: "$" + numFormat(item.usd.price),
+      volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
+      icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
+    }))
+    .slice(0, 10);
 
-    if (!image) {
-      throw new Error("Image is not generated!");
-    }
+  // Yesterday date
+  const date = moment().subtract(1, "day").format("YYYY-MM-DD");
 
-    // Caption Manually
-    const caption = `
+  // Create Image
+  const image = await createImageFromTemplate(
+    "table-coin-" + getRandomTheme(),
+    {
+      tokens,
+      headers: ["Token", "Average Price", "Traded Volume"],
+      title: "Daily Recap",
+      subtitle: `Total traded volume (24h): ${abbreviateNumber(
+        Number(totalVol),
+        0,
+        true
+      )} IRR`,
+      lastUpdate: date,
+    },
+    "daily-coins.jpg"
+  );
+
+  if (!image) {
+    throw new Error("Image is not generated!");
+  }
+
+  // Caption Manually
+  const caption = `
 📈 Yesterday's Crypto Market Recap | ${date}
 
 📊 Total Traded Volume (24h): ${numFormat(Number(totalVol))} IRR
@@ -168,34 +163,29 @@ export async function makeTelegram(target, data) {
 <a href="https://t.me/irancrypto_market">Telegram @irancrypto_market</a>
 `;
 
-    // Publish the image on Telegram channel
-    await bot.sendPhoto(
-      getENV("TELEGRAM_CHANNEL_ID"),
-      image,
-      {
-        caption: caption,
-        parse_mode: "html",
-        disable_web_page_preview: true,
-      },
-      {
-        filename: `daily-coins-${new Date().toISOString().slice(0, 10)}.jpg`,
-        contentType: "image/jpeg",
-      }
-    );
-    console.log("Daily coin recap published successfully on telegram");
-  } catch (error) {
-    captureError(error, {
-      tags: {
-        worker: 'content',
-        function: 'makeTelegram',
-        target: target
-      },
-      extra: {
-        dataLength: data?.length || 0
-      }
-    });
-    throw error; // Re-throw to maintain Lambda error handling
-  }
+  // Publish the image on Telegram channel
+  const channelId = getENV("TELEGRAM_CHANNEL_ID");
+  await bot.sendPhoto(
+    channelId,
+    image,
+    {
+      caption: caption,
+      parse_mode: "html",
+      disable_web_page_preview: true,
+    },
+    {
+      filename: `daily-coins-${new Date().toISOString().slice(0, 10)}.jpg`,
+      contentType: "image/jpeg",
+    }
+  );
+
+  return postSuccess(platform, target, {
+    channelId,
+    recapDate: date,
+    tokenCount: tokens.length,
+    totalVolumeIrr: abbreviateNumber(Number(totalVol), 1, true),
+    imageFile: "daily-coins.jpg",
+  });
 }
 
 /**
@@ -221,7 +211,8 @@ function buildInstagramPrompt(type, data, totalVol) {
     if (top5.length === 0) return "";
 
     const leader = top5[0];
-    const leaderShare = totalVol > 0 ? Math.round((data[0]?.irr?.volume || 0) / totalVol * 100) : 0;
+    const leaderVol = data[0]?.irr?.volume || 0;
+    const leaderShare = totalVol > 0 ? Math.round(leaderVol / totalVol * 100) : 0;
 
     return `Write an Instagram caption for our weekly crypto market recap in Iran.
 
@@ -276,114 +267,120 @@ Make it insightful and engaging. Mention the month, highlight the competition, s
  * @param {Array} data - Data for the content
  */
 export async function makeInstagram(target, data) {
-  try {
-    if (target === "weekly-coin") {
-      // Filter Data
-      const filteredData = data.filter((item) => item.has_iran);
+  const platform = "instagram";
 
-      if (filteredData.length === 0) {
-        console.warn("No data with has_iran flag for weekly-coin Instagram post");
-        return;
-      }
+  if (target === "weekly-coin") {
+    const filteredData = data.filter((item) => item.has_iran);
 
-      // Total trade volume - use BigInt to avoid precision issues with large numbers
-      const totalVol = Number(filteredData
-        .reduce((acc, item) => acc + BigInt(Math.round(item.irr.volume || 0)), 0n));
-      const tokens = filteredData
-        .map((item) => ({
-          name: item.name_en,
-          price: "$" + numFormat(item.usd.price),
-          volume: abbreviateNumber(Math.round(item.irr.volume), 1, true) + " IRR",
-          icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
-        }))
-        .slice(0, 10);
-
-      // Create Image
-      const image = await createImageFromTemplate(
-        "table-coin-" + getRandomTheme(),
-        {
-          tokens,
-          headers: ["Token", "Average Price", "Traded Volume"],
-          title: "Weekly Recap",
-          subtitle: `Total traded volume in past week: ${abbreviateNumber(
-            Math.round(totalVol),
-            0,
-            true
-          )} IRR`,
-          lastUpdate: new Date().toISOString().slice(0, 10),
-        },
-        "weekly-coins.jpg"
-      );
-
-      if (!image) {
-        throw new Error("Image is not generated!");
-      }
-
-      // Get Caption from AI with real data and date context
-      const prompt = buildInstagramPrompt("weekly-coin", filteredData, totalVol);
-      const caption = await writeCaption(prompt);
-
-      // Publish the image on IG
-      await publishImage(image, caption);
-      console.log("Weekly coin recap published on Instagram");
-    } else if (target === "monthly-exchange") {
-      if (!data || data.length === 0) {
-        console.warn("No data for monthly-exchange Instagram post");
-        return;
-      }
-
-      // Total Trade Volume - use BigInt to avoid precision issues with large numbers
-      const totalVol = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.volume || 0)), 0n));
-
-      // Filter Data
-      const exchanges = data
-        .map((item) => ({
-          name: item.name_en,
-          volume: numFormat(Math.round(item.volume), 1, true) + " IRR",
-          logo: item.logo,
-        }))
-        .slice(0, 5);
-
-      // Create Image
-      const image = await createImageFromTemplate(
-        "table-exchange-dark",
-        {
-          exchanges,
-          title: "Exchanges Monthly Recap",
-          subtitle: `Total traded volume in past month: ${abbreviateNumber(
-            Math.round(totalVol),
-            0,
-            true
-          )} IRR`,
-          lastUpdate: new Date().toISOString().slice(0, 10),
-        },
-        "monthly-exchange.jpg"
-      );
-
-      if (!image) {
-        throw new Error("Image is not generated!");
-      }
-
-      // Get Caption from AI with real data and date context
-      const prompt = buildInstagramPrompt("monthly-exchange", data, totalVol);
-      const caption = await writeCaption(prompt);
-
-      // Publish the image on IG
-      await publishImage(image, caption);
-      console.log("Monthly recap exchanges published on Instagram");
+    if (filteredData.length === 0) {
+      return postSkipped(platform, target, "no coins with has_iran flag");
     }
-  } catch (error) {
-    captureError(error, {
-      tags: {
-        worker: 'content',
-        function: 'makeInstagram',
-        target: target
+
+    const totalVol = Number(filteredData
+      .reduce((acc, item) => acc + BigInt(Math.round(item.irr?.volume || 0)), 0n));
+
+    const tokens = filteredData
+      .map((item) => ({
+        name: item.name_en,
+        price: "$" + numFormat(item.usd?.price ?? 0),
+        volume: abbreviateNumber(Math.round(item.irr?.volume || 0), 1, true) + " IRR",
+        icon: item.icon.startsWith('http') ? item.icon : `https://irancrypto.market/${item.icon}`,
+      }))
+      .slice(0, 10);
+
+    // Create Image
+    const image = await createImageFromTemplate(
+      "table-coin-" + getRandomTheme(),
+      {
+        tokens,
+        headers: ["Token", "Average Price", "Traded Volume"],
+        title: "Weekly Recap",
+        subtitle: `Total traded volume in past week: ${abbreviateNumber(
+          Math.round(totalVol),
+          0,
+          true
+        )} IRR`,
+        lastUpdate: new Date().toISOString().slice(0, 10),
       },
-      extra: {
-        dataLength: data?.length || 0
-      }
+      "weekly-coins.jpg"
+    );
+
+    if (!image) {
+      throw new Error("Image is not generated!");
+    }
+
+    const prompt = buildInstagramPrompt("weekly-coin", filteredData, totalVol);
+    if (!prompt) {
+      return postSkipped(platform, target, "could not build caption prompt (insufficient data)");
+    }
+
+    const caption = await writeCaption(prompt);
+    const publishResult = await publishImage(image, caption);
+
+    return postSuccess(platform, target, {
+      postType: "weekly-coin",
+      tokenCount: tokens.length,
+      totalVolumeIrr: abbreviateNumber(totalVol, 1, true),
+      instagramPostId: publishResult?.id,
+      instagramUrl: publishResult?.url ?? (publishResult?.code ? `https://instagram.com/p/${publishResult.code}` : undefined),
+      captionChars: caption?.length ?? 0,
     });
-    throw error; // Re-throw to maintain Lambda error handling
   }
+
+  if (target === "monthly-exchange") {
+    if (!data?.length) {
+      return postSkipped(platform, target, "no exchange data");
+    }
+
+    const totalVol = Number(data.reduce((acc, item) => acc + BigInt(Math.round(item.volume || 0)), 0n));
+
+    // Filter Data
+    const exchanges = data
+      .map((item) => ({
+        name: item.name_en,
+        volume: numFormat(Math.round(item.volume), 1, true) + " IRR",
+        logo: item.logo,
+      }))
+      .slice(0, 5);
+
+    // Create Image
+    const image = await createImageFromTemplate(
+      "table-exchange-dark",
+      {
+        exchanges,
+        title: "Exchanges Monthly Recap",
+        subtitle: `Total traded volume in past month: ${abbreviateNumber(
+          Math.round(totalVol),
+          0,
+          true
+        )} IRR`,
+        lastUpdate: new Date().toISOString().slice(0, 10),
+      },
+      "monthly-exchange.jpg"
+    );
+
+    if (!image) {
+      throw new Error("Image is not generated!");
+    }
+
+    const prompt = buildInstagramPrompt("monthly-exchange", data, totalVol);
+    if (!prompt) {
+      return postSkipped(platform, target, "could not build caption prompt (insufficient data)");
+    }
+
+    const caption = await writeCaption(prompt);
+    const publishResult = await publishImage(image, caption);
+
+    return postSuccess(platform, target, {
+      postType: "monthly-exchange",
+      exchangeCount: exchanges.length,
+      totalVolumeIrr: abbreviateNumber(totalVol, 1, true),
+      instagramPostId: publishResult?.id,
+      instagramUrl: publishResult?.url ?? (publishResult?.code ? `https://instagram.com/p/${publishResult.code}` : undefined),
+      captionChars: caption?.length ?? 0,
+    });
+  }
+
+  return postSkipped(platform, target, `unknown target "${target}"`);
 }
 
