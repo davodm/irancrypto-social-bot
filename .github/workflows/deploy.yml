@@ -100,6 +100,8 @@ jobs:
         AYRSHARE_API_KEY: ${{ secrets.AYRSHARE_API_KEY }}
         LATE_API_KEY: ${{ secrets.LATE_API_KEY }}
         LATE_IG_ACCOUNT_ID: ${{ vars.LATE_IG_ACCOUNT_ID }}
+        ZERNIO_API_KEY: ${{ secrets.ZERNIO_API_KEY }}
+        ZERNIO_IG_ACCOUNT_ID: ${{ vars.ZERNIO_IG_ACCOUNT_ID }}
         # Telegram
         TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}

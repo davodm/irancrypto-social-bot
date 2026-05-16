@@ -242,7 +242,7 @@ async function download(url) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return await response.buffer();
+    return Buffer.from(await response.arrayBuffer());
   } catch (error) {
     console.error(`Download failed for ${url}:`, error.message);
     throw new Error(`Download failed: ${error.message}`);

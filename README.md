@@ -11,6 +11,7 @@ Automates daily, weekly, and monthly crypto market updates across Twitter, Insta
 - **Instagram** — Weekly coin recaps and monthly exchange recaps via pluggable providers:
   - [Ayrshare](https://www.ayrshare.com/) — social media scheduling API
   - [Late](https://docs.getlate.dev/) — social media API with presigned media uploads
+  - [Zernio](https://docs.zernio.com/platforms/instagram) — REST API with presigned media uploads (no SDK)
 - **Telegram** — Daily recap images posted to a channel via [Telegram Bot API](https://www.npmjs.com/package/node-telegram-bot-api).
 - **Serverless** — Runs on AWS Lambda with cron scheduling, zero maintenance.
 - **Error Tracking** — Integrated Sentry support for production monitoring.
@@ -27,7 +28,8 @@ poster.js (cron: every hour)
         ├── src/twitter.js        → Twitter API V2
         ├── src/instagram.js      → provider router (INSTAGRAM_PROVIDER env var)
         │     ├── src/providers/ayrshare.js   → Ayrshare API
-        │     └── src/providers/late.js       → Late API
+        │     ├── src/providers/late.js       → Late API
+        │     └── src/providers/zernio.js     → Zernio API
         ├── src/ai/               → AI content generation (multi-provider)
         ├── src/html.js           → Puppeteer image generation
         └── node-telegram-bot-api → Telegram channel posting
@@ -41,8 +43,9 @@ Instagram posting is handled by a pluggable provider system. Set `INSTAGRAM_PROV
 |----------|---------|-------------|
 | `ayrshare` (default) | `AYRSHARE_API_KEY` | Posts via [Ayrshare](https://www.ayrshare.com/) social media API |
 | `late` | `LATE_API_KEY` + `LATE_IG_ACCOUNT_ID` | Posts via [Late API](https://docs.getlate.dev/platforms/instagram) with presigned media upload |
+| `zernio` | `ZERNIO_API_KEY` + `ZERNIO_IG_ACCOUNT_ID` | Posts via [Zernio API](https://docs.zernio.com/platforms/instagram) with presigned media upload |
 
-Both providers expose the same interface (`publishImage`, `publishVideo`, `publishStory`), so switching is just an env var change.
+All providers expose the same interface (`publishImage`, `publishVideo`, `publishStory`), so switching is just an env var change.
 
 ### Scheduled Posts
 
@@ -100,6 +103,8 @@ Depending on your chosen provider:
 
 **Late** — Create an account at [getlate.dev](https://getlate.dev/), connect your Instagram Business/Creator account via OAuth, get your account ID from the dashboard, then set `LATE_API_KEY` and `LATE_IG_ACCOUNT_ID`.
 
+**Zernio** — Create an account at [zernio.com](https://zernio.com/signup), connect your Instagram Business/Creator account, create an API key, and copy your Instagram account ID from the dashboard. Set `INSTAGRAM_PROVIDER=zernio`, `ZERNIO_API_KEY`, and `ZERNIO_IG_ACCOUNT_ID`. See the [create post](https://docs.zernio.com/posts/create-post) and [media upload](https://docs.zernio.com/media/get-media-presigned-url) API docs.
+
 ### 5. Set up Telegram
 
 1. Create a bot via [@BotFather](https://t.me/BotFather) and copy the token to `TELEGRAM_BOT_TOKEN`
@@ -156,10 +161,12 @@ If `AI_PROVIDER` is not set, the system auto-selects the best available provider
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `INSTAGRAM_PROVIDER` | `ayrshare` | Provider to use: `ayrshare` or `late` |
+| `INSTAGRAM_PROVIDER` | `ayrshare` | Provider to use: `ayrshare`, `late`, or `zernio` |
 | `AYRSHARE_API_KEY` | | Ayrshare API key (required when provider is `ayrshare`) |
 | `LATE_API_KEY` | | Late API key (required when provider is `late`) |
 | `LATE_IG_ACCOUNT_ID` | | Late Instagram account ID (required when provider is `late`) |
+| `ZERNIO_API_KEY` | | Zernio API key (required when provider is `zernio`) |
+| `ZERNIO_IG_ACCOUNT_ID` | | Zernio Instagram account ID (required when provider is `zernio`) |
 
 ### Telegram
 
@@ -222,11 +229,11 @@ Set `SENTRY_DSN` to enable Sentry error tracking across scheduler and poster wor
 
 **Secrets** (sensitive values):
 
-`IRANCRYPTO_API_KEY`, `OPENAI_API_KEY`, `OPENAI_ORGANIZATION`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `TWITTER_ACCESS_TOKEN`, `TWITTER_REFRESH_TOKEN`, `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, `AYRSHARE_API_KEY`, `LATE_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `SENTRY_DSN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
+`IRANCRYPTO_API_KEY`, `OPENAI_API_KEY`, `OPENAI_ORGANIZATION`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `TOGETHER_API_KEY`, `TWITTER_ACCESS_TOKEN`, `TWITTER_REFRESH_TOKEN`, `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, `AYRSHARE_API_KEY`, `LATE_API_KEY`, `ZERNIO_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID`, `SENTRY_DSN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
 
 **Variables** (non-sensitive config):
 
-`DYNAMODB_TABLE`, `CHROMIUM_LAYER_ARN`, `AI_MODEL`, `AI_PROVIDER`, `TWITTER_CALLBACK_URL`, `INSTAGRAM_PROVIDER`, `LATE_IG_ACCOUNT_ID`
+`DYNAMODB_TABLE`, `CHROMIUM_LAYER_ARN`, `AI_MODEL`, `AI_PROVIDER`, `TWITTER_CALLBACK_URL`, `INSTAGRAM_PROVIDER`, `LATE_IG_ACCOUNT_ID`, `ZERNIO_IG_ACCOUNT_ID`
 
 ## Testing
 

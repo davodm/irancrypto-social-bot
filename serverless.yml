@@ -95,11 +95,13 @@ functions:
       TWITTER_CLIENT_ID: ${env:TWITTER_CLIENT_ID, ''}
       TWITTER_CLIENT_SECRET: ${env:TWITTER_CLIENT_SECRET, ''}
       TWITTER_CALLBACK_URL: ${env:TWITTER_CALLBACK_URL, ''}
-      # Instagram Configuration (provider: "ayrshare" or "late")
+      # Instagram Configuration (provider: "ayrshare", "late", or "zernio")
       INSTAGRAM_PROVIDER: ${env:INSTAGRAM_PROVIDER, 'ayrshare'}
       AYRSHARE_API_KEY: ${env:AYRSHARE_API_KEY, ''}
       LATE_API_KEY: ${env:LATE_API_KEY, ''}
       LATE_IG_ACCOUNT_ID: ${env:LATE_IG_ACCOUNT_ID, ''}
+      ZERNIO_API_KEY: ${env:ZERNIO_API_KEY, ''}
+      ZERNIO_IG_ACCOUNT_ID: ${env:ZERNIO_IG_ACCOUNT_ID, ''}
       # Telegram Configuration
       TELEGRAM_BOT_TOKEN: ${env:TELEGRAM_BOT_TOKEN, ''}
       TELEGRAM_CHANNEL_ID: ${env:TELEGRAM_CHANNEL_ID, ''}

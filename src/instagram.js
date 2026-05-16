@@ -1,12 +1,13 @@
 /**
  * Instagram posting helper
- * Delegates to a configured provider (ayrshare or late) via INSTAGRAM_PROVIDER env var
+ * Delegates to a configured provider (ayrshare, late, or zernio) via INSTAGRAM_PROVIDER env var
  */
 import { getENV } from "./env.js";
 
 const PROVIDERS = {
   ayrshare: "./providers/ayrshare.js",
   late: "./providers/late.js",
+  zernio: "./providers/zernio.js",
 };
 
 async function getProvider() {
@@ -29,6 +30,19 @@ async function getProvider() {
     const apiKey = getENV("LATE_API_KEY", "");
     if (!apiKey || !apiKey.trim()) {
       throw new Error("LATE_API_KEY is required when INSTAGRAM_PROVIDER=late");
+    }
+  }
+
+  if (name === "zernio") {
+    const apiKey = getENV("ZERNIO_API_KEY", "");
+    if (!apiKey || !apiKey.trim()) {
+      throw new Error("ZERNIO_API_KEY is required when INSTAGRAM_PROVIDER=zernio");
+    }
+    const accountId = getENV("ZERNIO_IG_ACCOUNT_ID", "");
+    if (!accountId || !accountId.trim()) {
+      throw new Error(
+        "ZERNIO_IG_ACCOUNT_ID is required when INSTAGRAM_PROVIDER=zernio"
+      );
     }
   }
 
